@@ -3,371 +3,477 @@
     "book": "Genesis",
     "chapter": 1,
     "verse": 1,
-    "esv_text": "1 In the beginning God created the heaven and the earth.",
-    "bcn_text": "1 Er penn-kentañ e krouas Doue an neñvoù hag an douar."
+    "cpdv_text": "In the beginning, God created heaven and earth.",
+    "koad21_text": "Er penn-kentañ e krouas Doue an neñvoù hag an douar.",
+    "bcnda_text": "Yn y dechreuad creodd Duw y nefoedd a'r ddaear.",
+    "abk_text": "Y'n dalleth Duw a formyas an nev ha'n nor."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 2,
-    "esv_text": "2 And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
-    "bcn_text": "2 An douar a oa deuet dizoare ha goullo, an deñvalijenn a oa war-c'horre an donder, ha Spered Doue a fiñve dreist an doureier."
+    "cpdv_text": "But the earth was empty and unoccupied, and darknesses were over the face of the abyss; and so the Spirit of God was brought over the waters.",
+    "koad21_text": "An douar a oa deuet dizoare ha goullo, an deñvalijenn a oa war-c'horre an donder, ha Spered Doue a fiñve dreist an doureier.",
+    "bcnda_text": "Yr oedd y ddaear yn afluniaidd a gwag, ac yr oedd tywyllwch ar wyneb y dyfnder, ac ysbryd Duw yn ymsymud ar wyneb y dyfroedd.",
+    "abk_text": "Heb form ha gwag o an nor. Yth esa tewolgow war enep an downder ha Spyrys Duw esa ow kwaya war enep an dowrow."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 3,
-    "esv_text": "3 And God said, Let there be light: and there was light.",
-    "bcn_text": "3 Doue a lavaras: Ra vo ar sklêrijenn. Hag ar sklêrijenn a voe."
+    "cpdv_text": "And God said, \"Let there be light.\" And light became.",
+    "koad21_text": "Doue a lavaras: Ra vo ar sklêrijenn. Hag ar sklêrijenn a voe.",
+    "bcnda_text": "A dywedodd Duw, “Bydded goleuni.” A bu goleuni.",
+    "abk_text": "Hag yn-medh Duw, ‘Bedhes golow’; hag y feu golow."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 4,
-    "esv_text": "4 And God saw the light, that it was good: and God divided the light from the darkness.",
-    "bcn_text": "4 Doue a welas e oa mat ar sklêrijenn, ha Doue a zispartias ar sklêrijenn diouzh an deñvalijenn."
+    "cpdv_text": "And God saw the light, that it was good; and so he divided the light from the darknesses.",
+    "koad21_text": "Doue a welas e oa mat ar sklêrijenn, ha Doue a zispartias ar sklêrijenn diouzh an deñvalijenn.",
+    "bcnda_text": "Gwelodd Duw fod y goleuni yn dda; a gwahanodd Duw y goleuni oddi wrth y tywyllwch.",
+    "abk_text": "Ha Duw a welas an golow, ev dhe vos da; ha Duw a wrug dibarth ynter an golewder ha'n tewolgow."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 5,
-    "esv_text": "5 And God called the light Day, and the darkness he called Night. And the evening and the morning were the first day.",
-    "bcn_text": "5 Doue a c'halvas ar sklêrijenn deiz, hag an deñvalijenn noz. Hag un abardaez, hag ur beure, a voe an deiz kentañ."
+    "cpdv_text": "And he called the light, 'Day,' and the darknesses, 'Night.' And it became evening and morning, one day.",
+    "koad21_text": "Doue a c'halvas ar sklêrijenn deiz, hag an deñvalijenn noz. Hag un abardaez, hag ur beure, a voe an deiz kentañ.",
+    "bcnda_text": "Galwodd Duw y goleuni yn ddydd a'r tywyllwch yn nos. A bu hwyr a bu bore, y dydd cyntaf.",
+    "abk_text": "Ha Duw a elwis an golewder Dydh ha'n tewolgow ev a elwis Nos. Hag y feu gorthugher hag y feu myttin, unn jydh."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 6,
-    "esv_text": "6 And God said, Let there be a firmament in the midst of the waters, and let it divide the waters from the waters.",
-    "bcn_text": "6 Doue a lavaras: Ra vo un astennidigezh etre an doureier, ma tispartio an doureier diouzh an doureier."
+    "cpdv_text": "God also said, \"Let there be a firmament in the midst of the waters, and let it divide waters from waters.\"",
+    "koad21_text": "Doue a lavaras: Ra vo un astennidigezh etre an doureier, ma tispartio an doureier diouzh an doureier.",
+    "bcnda_text": "Yna dywedodd Duw, “Bydded ffurfafen yng nghanol y dyfroedd yn gwahanu dyfroedd oddi wrth ddyfroedd.”",
+    "abk_text": "Hag yn-medh Duw, ‘Bedhes fyrmament yn mysk an dowrow, ow kul dibarth ynter an dowrow ha'n dowrow.’"
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 7,
-    "esv_text": "7 And God made the firmament, and divided the waters which were under the firmament from the waters which were above the firmament: and it was so.",
-    "bcn_text": "7 Doue a reas an astennidigezh hag a zispartias an doureier a zo dindan an astennidigezh diouzh ar re a zo dreist an astennidigezh. Hag evel-se e voe."
+    "cpdv_text": "And God made a firmament, and he divided the waters that were under the firmament, from those that were above the firmament. And so it became.",
+    "koad21_text": "Doue a reas an astennidigezh hag a zispartias an doureier a zo dindan an astennidigezh diouzh ar re a zo dreist an astennidigezh. Hag evel-se e voe.",
+    "bcnda_text": "A gwnaeth Duw y ffurfafen, a gwahanodd y dyfroedd odani oddi wrth y dyfroedd uwchlaw iddi. A bu felly.",
+    "abk_text": "Ha Duw a wrug an fyrmament ha gul dibarth ynter an dowrow esa yn-dann an fyrmament ha'n dowrow esa a-ugh an fyrmament. Hag y feu yndella."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 8,
-    "esv_text": "8 And God called the firmament Heaven. And the evening and the morning were the second day.",
-    "bcn_text": "8 Doue a c'halvas an astennidigezh neñvoù. Hag un abardaez, hag ur beure, a voe an eil deiz."
+    "cpdv_text": "And God called the firmament 'Heaven.' And it became evening and morning, the second day.",
+    "koad21_text": "Doue a c'halvas an astennidigezh neñvoù. Hag un abardaez, hag ur beure, a voe an eil deiz.",
+    "bcnda_text": "Galwodd Duw y ffurfafen yn nefoedd. A bu hwyr a bu bore, yr ail ddydd.",
+    "abk_text": "Duw a elwis an fyrmament Nev. Hag y feu gorthugher hag y feu myttin, an nessa dydh."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 9,
-    "esv_text": "9 And God said, Let the waters under the heaven be gathered together unto one place, and let the dry land appear: and it was so.",
-    "bcn_text": "9 Doue a lavaras: Ra en em zastumo an doureier a zo dindan an neñvoù en ul lec'h hepken, ma en em ziskouezo ar sec'h. Hag evel-se e voe."
+    "cpdv_text": "Truly God said: \"Let the waters that are under heaven be gathered together into one place; and let the dry land appear.\" And so it became.",
+    "koad21_text": "Doue a lavaras: Ra en em zastumo an doureier a zo dindan an neñvoù en ul lec'h hepken, ma en em ziskouezo ar sec'h. Hag evel-se e voe.",
+    "bcnda_text": "Yna dywedodd Duw, “Casgler ynghyd y dyfroedd dan y nefoedd i un lle, ac ymddangosed tir sych.” A bu felly.",
+    "abk_text": "Hag yn-medh Duw, ‘Bedhes an dowr yn-dann an nev kuntellys yn unn tyller, ha gwres omdhiskwedhes tir sygh.’ Hag y feu yndella."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 10,
-    "esv_text": "10 And God called the dry land Earth; and the gathering together of the waters called he Seas: and God saw that it was good.",
-    "bcn_text": "10 Doue a c'halvas ar sec'h douar, ha dastumadeg an doureier morioù. Doue a welas e oa mat kement-se."
+    "cpdv_text": "And God called the dry land, 'Earth,' and he called the gathering of the waters, 'Seas.' And God saw that it was good.",
+    "koad21_text": "Doue a c'halvas ar sec'h douar, ha dastumadeg an doureier morioù. Doue a welas e oa mat kement-se.",
+    "bcnda_text": "Galwodd Duw y tir sych yn ddaear, a chronfa'r dyfroedd yn foroedd. A gwelodd Duw fod hyn yn dda.",
+    "abk_text": "Duw a elwis an dor sygh Tir, ha kuntellva an dowrow ev a elwis Moryow. Ha Duw a welas henna dhe vos da."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 11,
-    "esv_text": "11 And God said, Let the earth bring forth grass, the herb yielding seed, and the fruit tree yielding fruit after his kind, whose seed is in itself, upon the earth: and it was so.",
-    "bcn_text": "11 Doue a lavaras: Ra broduo an douar glasvez, geot o tougen had, gwez-frouezh o tougen o frouezh hervez o rumm hag o devo o had enno o-unan war an douar. Hag evel-se e voe."
+    "cpdv_text": "And he said, \"Let the land spring forth green plants, both those producing seed, and fruit-bearing trees, producing fruit according to their kind, whose seed is within itself, over all the earth.\" And so it became.",
+    "koad21_text": "Doue a lavaras: Ra broduo an douar glasvez, geot o tougen had, gwez-frouezh o tougen o frouezh hervez o rumm hag o devo o had enno o-unan war an douar. Hag evel-se e voe.",
+    "bcnda_text": "Dywedodd Duw, “Dyged y ddaear dyfiant, llysiau yn dwyn had, a choed ir ar y ddaear yn dwyn ffrwyth â had ynddo, yn ôl eu rhywogaeth.” A bu felly.",
+    "abk_text": "Hag yn-medh Duw, ‘Gwres an nor dri gwels yn-rag, losow ow toen has, ha gwydh ow toen frut war-lergh aga hinda, hag ynno has, war an dor.’ Hag y feu yndella."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 12,
-    "esv_text": "12 And the earth brought forth grass, and herb yielding seed after his kind, and the tree yielding fruit, whose seed was in itself, after his kind: and God saw that it was good.",
-    "bcn_text": "12 An douar a broduas glasvez, geot o tougen o had hervez o rumm, gwez o tougen frouezh hag o doa o had enno o-unan hervez o rumm. Doue a welas e oa mat kement-se."
+    "cpdv_text": "And the land brought forth green plants, both those producing seed, according to their kind, and trees producing fruit, with each having its own way of sowing, according to its species. And God saw that it was good.",
+    "koad21_text": "An douar a broduas glasvez, geot o tougen o had hervez o rumm, gwez o tougen frouezh hag o doa o had enno o-unan hervez o rumm. Doue a welas e oa mat kement-se.",
+    "bcnda_text": "Dygodd y ddaear dyfiant, llysiau yn dwyn had yn ôl eu rhywogaeth, a choed yn dwyn ffrwyth â had ynddo, yn ôl eu rhywogaeth. A gwelodd Duw fod hyn yn dda.",
+    "abk_text": "Ha'n tir a dhros gwels yn-rag, losow ow toen has war-lergh aga hinda ha gwydh ow toen frut gans has ynno war-lergh aga hinda; ha Duw a welas henna dhe vos da."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 13,
-    "esv_text": "13 And the evening and the morning were the third day.",
-    "bcn_text": "13 Hag un abardaez, hag ur beure, a voe an trede deiz."
+    "cpdv_text": "And it became evening and the morning, the third day.",
+    "koad21_text": "Hag un abardaez, hag ur beure, a voe an trede deiz.",
+    "bcnda_text": "A bu hwyr a bu bore, y trydydd dydd.",
+    "abk_text": "Hag y feu gorthugher hag y feu myttin, an tressa dydh."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 14,
-    "esv_text": "14 And God said, Let there be lights in the firmament of the heaven to divide the day from the night; and let them be for signs, and for seasons, and for days, and years:",
-    "bcn_text": "14 Doue a lavaras: Ra vo goulaouennoù en astennidigezh an neñvoù evit dispartiañ an deiz diouzh an noz; ra vint sinoù evit an amzerioù, evit an deizioù hag evit ar bloavezhioù;"
+    "cpdv_text": "Then God said: \"Let there be lights in the firmament of heaven. And let them divide day from night, and let them become signs, both of the seasons, and of the days and years.",
+    "koad21_text": "Doue a lavaras: Ra vo goulaouennoù en astennidigezh an neñvoù evit dispartiañ an deiz diouzh an noz; ra vint sinoù evit an amzerioù, evit an deizioù hag evit ar bloavezhioù;",
+    "bcnda_text": "Yna dywedodd Duw, “Bydded goleuadau yn ffurfafen y nefoedd i wahanu'r dydd oddi wrth y nos, ac i fod yn arwyddion i'r tymhorau, a hefyd i'r dyddiau a'r blynyddoedd.",
+    "abk_text": "Hag yn-medh Duw, ‘Bedhens golowys yn fyrmament an nev dhe wul dibarth ynter an jydh ha'n nos, ha bedhens avel toknys rag sesonyow, ha rag dydhyow ha blydhynyow."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 15,
-    "esv_text": "15 and let them be for lights in the firmament of the heaven to give light upon the earth: and it was so.",
-    "bcn_text": "15 ra vint goulaouennoù en astennidigezh an neñvoù evit sklêrijennañ an douar. Hag evel-se e voe."
+    "cpdv_text": "Let them shine in the firmament of heaven and illuminate the earth.\" And so it became.",
+    "koad21_text": "ra vint goulaouennoù en astennidigezh an neñvoù evit sklêrijennañ an douar. Hag evel-se e voe.",
+    "bcnda_text": "Bydded iddynt fod yn oleuadau yn ffurfafen y nefoedd i oleuo ar y ddaear.” A bu felly.",
+    "abk_text": "Ha bedhens avel golowys yn fyrmament an nev dhe ri golow war an nor.’ Hag y feu yndella."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 16,
-    "esv_text": "16 And God made two great lights; the greater light to rule the day, and the lesser light to rule the night: he made the stars also.",
-    "bcn_text": "16 Doue a reas an div c'houlaouenn vras: ar c'houlaouenn vrasañ evit ren war an deiz, hag ar c'houlaouenn vihanañ evit ren war an noz. Ober a reas ivez ar stered."
+    "cpdv_text": "And God made two great lights: a greater light, to rule over the day, and a lesser light, to rule over the night, along with the stars.",
+    "koad21_text": "Doue a reas an div c'houlaouenn vras: ar c'houlaouenn vrasañ evit ren war an deiz, hag ar c'houlaouenn vihanañ evit ren war an noz. Ober a reas ivez ar stered.",
+    "bcnda_text": "Gwnaeth Duw y ddau olau mawr, y golau mwyaf i reoli'r dydd, a'r golau lleiaf y nos; a gwnaeth y sêr hefyd.",
+    "abk_text": "Duw a wrug dew wolow bras, an golow brassa dhe rewlya an jydh ha'n golow le dhe rewlya an nos. Ev a wrug an ster ynwedh."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 17,
-    "esv_text": "17 And God set them in the firmament of the heaven to give light upon the earth,",
-    "bcn_text": "17 Doue a lakaas anezho en astennidigezh an neñvoù evit sklêrijennañ an douar,"
+    "cpdv_text": "And he set them in the firmament of heaven, to give light over all the earth,",
+    "koad21_text": "Doue a lakaas anezho en astennidigezh an neñvoù evit sklêrijennañ an douar,",
+    "bcnda_text": "A gosododd Duw hwy yn ffurfafen y nefoedd i oleuo ar y ddaear,",
+    "abk_text": "Ha Duw a's gorras yn fyrmament an nev dhe ri golow war an nor,"
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 18,
-    "esv_text": "18 and to rule over the day and over the night, and to divide the light from the darkness: and God saw that it was good.",
-    "bcn_text": "18 evit ren war an deiz ha war an noz, hag evit dispartiañ ar sklêrijenn diouzh an deñvalijenn. Doue a welas e oa mat kement-se."
+    "cpdv_text": "and to rule over the day as well as the night, and to divide light from darkness. And God saw that it was good.",
+    "koad21_text": "evit ren war an deiz ha war an noz, hag evit dispartiañ ar sklêrijenn diouzh an deñvalijenn. Doue a welas e oa mat kement-se.",
+    "bcnda_text": "i reoli'r dydd a'r nos ac i wahanu'r goleuni oddi wrth y tywyllwch. A gwelodd Duw fod hyn yn dda.",
+    "abk_text": "ha dhe rewlya an jydh ha'n nos, ha dhe wul dibarth ynter an golewder ha'n tewolgow. Ha Duw a welas henna dhe vos da."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 19,
-    "esv_text": "19 And the evening and the morning were the fourth day.",
-    "bcn_text": "19 Hag un abardaez, hag ur beure, a voe ar pevare deiz."
+    "cpdv_text": "And it became evening and morning, the fourth day.",
+    "koad21_text": "Hag un abardaez, hag ur beure, a voe ar pevare deiz.",
+    "bcnda_text": "A bu hwyr a bu bore, y pedwerydd dydd.",
+    "abk_text": "Hag y feu gorthugher hag y feu myttin, an peswora dydh."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 20,
-    "esv_text": "20 And God said, Let the waters bring forth abundantly the moving creature that hath life, and fowl that may fly above the earth in the open firmament of heaven.",
-    "bcn_text": "20 Doue a lavaras: Ra broduo an doureier boudoù bev a-fonn, ha ra nijo laboused a-us d'an douar war-zu astennidigezh an neñvoù."
+    "cpdv_text": "And then God said, \"Let the waters produce animals with a living soul, and flying creatures above the earth, under the firmament of heaven.\"",
+    "koad21_text": "Doue a lavaras: Ra broduo an doureier boudoù bev a-fonn, ha ra nijo laboused a-us d'an douar war-zu astennidigezh an neñvoù.",
+    "bcnda_text": "Yna dywedodd Duw, “Heigied y dyfroedd o greaduriaid byw, ac uwchlaw'r ddaear eheded adar ar draws ffurfafen y nefoedd.”",
+    "abk_text": "Hag yn-medh Duw, ‘Re dhrollo an dowr yn-mes hesow a greaturs bew, hag ydhyn ow nija a-ugh an nor war enep fyrmament an nev.’"
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 21,
-    "esv_text": "21 And God created great whales, and every living creature that moveth, which the waters brought forth abundantly, after their kind, and every winged fowl after his kind: and God saw that it was good.",
-    "bcn_text": "21 Doue a grouas ar pesked bras hag an holl voudoù bev a fiñv a broduas an doureier gant fonnder hervez o rumm, ha pep labous askellek hervez e rumm. Doue a welas e oa mat kement-se."
+    "cpdv_text": "And God created the great sea creatures, and everything with a living soul and the ability to move that the waters produced, according to their species, and all the flying creatures, according to their kind. And God saw that it was good.",
+    "koad21_text": "Doue a grouas ar pesked bras hag an holl voudoù bev a fiñv a broduas an doureier gant fonnder hervez o rumm, ha pep labous askellek hervez e rumm. Doue a welas e oa mat kement-se.",
+    "bcnda_text": "A chreodd Duw y morfilod mawr, a'r holl greaduriaid byw sy'n heigio yn y dyfroedd yn ôl eu rhywogaeth, a phob aderyn asgellog yn ôl ei rywogaeth. A gwelodd Duw fod hyn yn dda.",
+    "abk_text": "Ha Duw a formyas morviles bras ha pub kreatur bew ow kwaya, a wra an dowrow dri yn-mes yn hesow, war-lergh aga hinda, ha pub edhen askellek war-lergh hy hinda. Ha Duw a welas henna dhe vos da."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 22,
-    "esv_text": "22 And God blessed them, saying, Be fruitful, and multiply, and fill the waters in the seas, and let fowl multiply in the earth.",
-    "bcn_text": "22 Doue o bennigas, o lavarout: Bezit frouezhus, kreskit ha leugnit doureier ar morioù, ha ra gresko al laboused war an douar."
+    "cpdv_text": "And he blessed them, saying: \"Increase and multiply, and fill the waters of the sea. And let the birds be multiplied above the land.\"",
+    "koad21_text": "Doue o bennigas, o lavarout: Bezit frouezhus, kreskit ha leugnit doureier ar morioù, ha ra gresko al laboused war an douar.",
+    "bcnda_text": "Bendithiodd Duw hwy a dweud, “Byddwch ffrwythlon ac amlhewch a llanwch ddyfroedd y moroedd, a lluosoged yr adar ar y ddaear.”",
+    "abk_text": "Duw a's bennigas ha leverel, ‘Degewgh frut, ha kressya ha lenwel dowrow an moryow ha lieshens ydhyn war an nor.’"
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 23,
-    "esv_text": "23 And the evening and the morning were the fifth day.",
-    "bcn_text": "23 Hag un abardaez, hag ur beure, a voe ar pempvet deiz."
+    "cpdv_text": "And it became evening and morning, the fifth day.",
+    "koad21_text": "Hag un abardaez, hag ur beure, a voe ar pempvet deiz.",
+    "bcnda_text": "A bu hwyr a bu bore, y pumed dydd.",
+    "abk_text": "Hag y feu gorthugher hag y feu myttin, an pympes dydh."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 24,
-    "esv_text": "24 And God said, Let the earth bring forth the living creature after his kind, cattle, and creeping thing, and beast of the earth after his kind: and it was so.",
-    "bcn_text": "24 Doue a lavaras: Ra broduo an douar boudoù bev hervez o rumm, chatal, stlejviled hag anevaled douarek hervez o rumm. Hag evel-se e voe."
+    "cpdv_text": "God also said, \"Let the land produce living souls in their kind: cattle, and animals, and wild beasts of the earth, according to their species.\" And so it became.",
+    "koad21_text": "Doue a lavaras: Ra broduo an douar boudoù bev hervez o rumm, chatal, stlejviled hag anevaled douarek hervez o rumm. Hag evel-se e voe.",
+    "bcnda_text": "Yna dywedodd Duw, “Dyged y ddaear greaduriaid byw yn ôl eu rhywogaeth: anifeiliaid, ymlusgiaid a bwystfilod gwyllt yn ôl eu rhywogaeth.” A bu felly.",
+    "abk_text": "Hag yn-medh Duw, ‘Gwres an dor dri mes kreaturs bew war-lergh aga hinda, chatel ha pryves ha miles an nor war-lergh aga hinda.’ Hag y feu yndella."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 25,
-    "esv_text": "25 And God made the beast of the earth after his kind, and cattle after their kind, and every thing that creepeth upon the earth after his kind: and God saw that it was good.",
-    "bcn_text": "25 Doue a reas anevaled an douar hervez o rumm, ar chatal hervez e rumm hag holl stlejviled an douar hervez o rumm. Doue a welas e oa mat kement-se."
+    "cpdv_text": "And God made the wild beasts of the earth according to their species, and the cattle, and every animal on the land, according to its kind. And God saw that it was good.",
+    "koad21_text": "Doue a reas anevaled an douar hervez o rumm, ar chatal hervez e rumm hag holl stlejviled an douar hervez o rumm. Doue a welas e oa mat kement-se.",
+    "bcnda_text": "Gwnaeth Duw y bwystfilod gwyllt yn ôl eu rhywogaeth, a'r anifeiliaid yn ôl eu rhywogaeth, a holl ymlusgiaid y tir yn ôl eu rhywogaeth. A gwelodd Duw fod hyn yn dda.",
+    "abk_text": "Ha Duw a wrug miles an nor war-lergh aga hinda, ha chatel war-lergh aga hinda hag oll an kreaturs ow slynkya war an dor war-lergh aga hinda. Ha Duw a welas henna dhe vos da."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 26,
-    "esv_text": "26 And God said, Let us make man in our image, after our likeness: and let them have dominion over the fish of the sea, and over the fowl of the air, and over the cattle, and over all the earth, and over every creeping thing that creepeth upon the earth.",
-    "bcn_text": "26 Doue a lavaras: Greomp an den en hor skeudenn, hervez hon heñveledigezh, ha ra reno war besked ar mor, war laboused an neñvoù, war ar chatal, war an douar holl ha war an holl stlejviled a ruz war an douar."
+    "cpdv_text": "And he said: \"Let us make Man to our image and likeness. And let him rule over the fish of the sea, and the flying creatures of the air, and the wild beasts, and the entire earth, and every animal that moves on the earth.\"",
+    "koad21_text": "Doue a lavaras: Greomp an den en hor skeudenn, hervez hon heñveledigezh, ha ra reno war besked ar mor, war laboused an neñvoù, war ar chatal, war an douar holl ha war an holl stlejviled a ruz war an douar.",
+    "bcnda_text": "Dywedodd Duw, “Gwnawn ddyn ar ein delw, yn ôl ein llun ni, i lywodraethu ar bysgod y môr, ar adar yr awyr, ar yr anifeiliaid gwyllt, ar yr holl ddaear, ac ar bopeth sy'n ymlusgo ar y ddaear.”",
+    "abk_text": "Ena yn-medh Duw, ‘Gwren ni gul den yn agan imaj, yn agan hevelep ni, ha gwrens i rewlya war buskes an mor ha war ydhyn an ayr, war an chatel ha war oll an nor, ha war bub pryv ow kramya war an dor.’"
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 27,
-    "esv_text": "27 So God created man in his own image, in the image of God created he him; male and female created he them.",
-    "bcn_text": "27 Doue a grouas an den en e skeudenn, e grouiñ a reas e skeudenn Doue; krouiñ a reas ur gwaz hag ur vaouez."
+    "cpdv_text": "And God created man to his own image; to the image of God he created him; male and female, he created them.",
+    "koad21_text": "Doue a grouas an den en e skeudenn, e grouiñ a reas e skeudenn Doue; krouiñ a reas ur gwaz hag ur vaouez.",
+    "bcnda_text": "Felly creodd Duw ddyn ar ei ddelw ei hun; ar ddelw Duw y creodd ef; yn wryw ac yn fenyw y creodd hwy.",
+    "abk_text": "Ytho Duw a formyas den war-lergh y imaj; war-lergh imaj Duw ev a'n formyas, gorow ha benow y hwrug ev aga formya."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 28,
-    "esv_text": "28 And God blessed them, and God said unto them, Be fruitful, and multiply, and replenish the earth, and subdue it: and have dominion over the fish of the sea, and over the fowl of the air, and over every living thing that moveth upon the earth.",
-    "bcn_text": "28 Doue o bennigas ha Doue a lavaras: Bezit frouezhus, kreskit, leugnit an douar ha mestrognit anezhañ, renit war besked ar mor, war laboused an neñvoù ha war gement aneval a fiñv war an douar."
+    "cpdv_text": "And God blessed them, and he said, \"Increase and multiply, and fill the earth, and subdue it, and have dominion over the fish of the sea, and the flying creatures of the air, and over every living thing that moves upon the earth.\"",
+    "koad21_text": "Doue o bennigas ha Doue a lavaras: Bezit frouezhus, kreskit, leugnit an douar ha mestrognit anezhañ, renit war besked ar mor, war laboused an neñvoù ha war gement aneval a fiñv war an douar.",
+    "bcnda_text": "Bendithiodd Duw hwy a dweud, “Byddwch ffrwythlon ac amlhewch, llanwch y ddaear a darostyngwch hi; llywodraethwch ar bysgod y môr, ar adar yr awyr, ac ar bopeth byw sy'n ymlusgo ar y ddaear.”",
+    "abk_text": "Ha Duw a's bennigas; ha Duw a leveris dhedha, ‘Degewgh frut ha kressya ha lenwel an nor ha'y dhova, ha rewlya puskes an mor hag ydhyn an ayr ha pub kreatur bew ow kwaya war an dor.’"
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 29,
-    "esv_text": "29 And God said, Behold, I have given you every herb bearing seed, which is upon the face of all the earth, and every tree, in the which is the fruit of a tree yielding seed; to you it shall be for meat.",
-    "bcn_text": "29 Ha Doue a lavaras: Setu, roet em eus deoc'h pep geotenn o tougen had a zo war-c'horre an douar holl, ha pep gwezenn he deus enni frouezh gwezenn o tougen had: kement-se a vo ho poued."
+    "cpdv_text": "And God said: \"Behold, I have given you every seed-bearing plant upon the earth, and all the trees that have in themselves the ability to sow their own kind, to be food for you,",
+    "koad21_text": "Ha Doue a lavaras: Setu, roet em eus deoc'h pep geotenn o tougen had a zo war-c'horre an douar holl, ha pep gwezenn he deus enni frouezh gwezenn o tougen had: kement-se a vo ho poued.",
+    "bcnda_text": "A dywedodd Duw, “Yr wyf yn rhoi i chwi bob llysieuyn sy'n dwyn had ar wyneb y ddaear, a phob coeden â had yn ei ffrwyth; byddant yn fwyd i chwi.",
+    "abk_text": "Hag yn-medh Duw, ‘Awotta, my re ros dhywgh pub losow gans has war enep an norvys oll ha pub gwydhenn gans frut may ma ynni has. I a vydh dhywgh rag boes."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 30,
-    "esv_text": "30 And to every beast of the earth, and to every fowl of the air, and to every thing that creepeth upon the earth, wherein there is life, I have given every green herb for meat: and it was so.",
-    "bcn_text": "30 Da holl loened an douar, da holl laboused an neñvoù, da gement a fiñv war an douar hag en deus ennañ un ene bev, em eus roet pep geotenn c'hlas evit boued. Hag evel-se e voe."
+    "cpdv_text": "and for all the animals of the land, and for all the flying things of the air, and for everything that moves upon the earth and in which there is a living soul, so that they may have these on which to feed.\" And so it became.",
+    "koad21_text": "Da holl loened an douar, da holl laboused an neñvoù, da gement a fiñv war an douar hag en deus ennañ un ene bev, em eus roet pep geotenn c'hlas evit boued. Hag evel-se e voe.",
+    "bcnda_text": "Ac i bob bwystfil gwyllt, i holl adar yr awyr, ac i bopeth sy'n ymlusgo ar y ddaear, popeth ag anadl einioes ynddo, bydd pob llysieuyn glas yn fwyd.” A bu felly.",
+    "abk_text": "Ha my re ros pub losowenn las avel boes dhe bub best a'n nor ha dhe bub edhen a'n ayr ha dhe bub kreatur may ma enev bew ynno ow kramya war an dor.’ Hag yndella y feu."
   },
   {
     "book": "Genesis",
     "chapter": 1,
     "verse": 31,
-    "esv_text": "31 And God saw every thing that he had made, and, behold, it was very good. And the evening and the morning were the sixth day.",
-    "bcn_text": "31 Doue a welas kement en doa graet ha setu, e oa mat-meurbet. Hag un abardaez, hag ur beure, a voe ar c'hwec'hvet deiz."
+    "cpdv_text": "And God saw everything that he had made. And they were very good. And it became evening and morning, the sixth day.",
+    "koad21_text": "Doue a welas kement en doa graet ha setu, e oa mat-meurbet. Hag un abardaez, hag ur beure, a voe ar c'hwec'hvet deiz.",
+    "bcnda_text": "Gwelodd Duw y cwbl a wnaeth, ac yr oedd yn dda iawn. A bu hwyr a bu bore, y chweched dydd.",
+    "abk_text": "Ha Duw a welas pup-tra re wrussa hag awotta, yth o pur dha. Hag y feu gorthugher hag y feu myttin, an hweghves dydh."
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 1,
-    "esv_text": "1 Now these are the names of the children of Israel, which came into Egypt; every man and his household came with Jacob.",
-    "bcn_text": "1 Setu anvioù mibien Israel a zeuas en Ejipt gant Jakob. Dont a rejont pep hini gant e diegezh."
+    "cpdv_text": "These are the names of the sons of Israel, who went into Egypt with Jacob. They entered, each one with his house:",
+    "koad21_text": "Setu anvioù mibien Israel a zeuas en Ejipt gant Jakob. Dont a rejont pep hini gant e diegezh.",
+    "bcnda_text": "Dyma enwau meibion Israel a aeth i'r Aifft gyda Jacob, pob un gyda'i deulu:",
+    "abk_text": "Ha'n re ma yw henwyn mebyon Ysrael neb a dheuth a-ji dhe Ejyp gans Yakob; pubonan a dheuth gans y vayni."
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 2,
-    "esv_text": "2 Reuben, Simeon, Levi, and Judah,",
-    "bcn_text": "2 Ruben, Simeon, Levi, Juda,"
+    "cpdv_text": "Reuben, Simeon, Levi, Judah,",
+    "koad21_text": "Ruben, Simeon, Levi, Juda,",
+    "bcnda_text": "Reuben, Simeon, Lefi a Jwda,",
+    "abk_text": "Rewben, Simeon, Levi ha Yuda,"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 3,
-    "esv_text": "3 Issachar, Zebulun, and Benjamin,",
-    "bcn_text": "3 Isakar, Zabulon, Benjamin,"
+    "cpdv_text": "Issachar, Zebulun, and Benjamin,",
+    "koad21_text": "Isakar, Zabulon, Benjamin,",
+    "bcnda_text": "Issachar, Sabulon a Benjamin,",
+    "abk_text": "Yssakar, Zebulun ha Benyamin,"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 4,
-    "esv_text": "4 Dan, and Naphtali, Gad, and Asher.",
-    "bcn_text": "4 Dan, Neftali, Gad hag Aser."
+    "cpdv_text": "Dan and Naphtali, Gad and Asher.",
+    "koad21_text": "Dan, Neftali, Gad hag Aser.",
+    "bcnda_text": "Dan a Nafftali, Gad ac Aser.",
+    "abk_text": "Dan ha Naftali, Gad hag Asher."
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 5,
-    "esv_text": "5 And all the souls that came out of the loins of Jacob were seventy souls: for Joseph was in Egypt already .",
-    "bcn_text": "5 An holl dud o tiskenn eus Jakob a oa dek ha tri-ugent. Jozef a oa en Ejipt."
+    "cpdv_text": "Therefore, all the souls of those who went forth from Jacob's thigh were seventy. Now Joseph was in Egypt.",
+    "koad21_text": "An holl dud o tiskenn eus Jakob a oa dek ha tri-ugent. Jozef a oa en Ejipt.",
+    "bcnda_text": "Yr oedd gan Jacob ddeg a thrigain o ddisgynyddion; yr oedd Joseff eisoes yn yr Aifft.",
+    "abk_text": "Hag oll an enevow ow tos a vordhos Yakob a veu deg den ha tri-ugens; ha Yosep, yth esa ev yn Ejyp."
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 6,
-    "esv_text": "6 And Joseph died, and all his brethren, and all that generation.",
-    "bcn_text": "6 Jozef a varvas, hag e holl vreudeur hag an holl rumm-se ivez."
+    "cpdv_text": "When he had died, along with all of his brothers and all of that generation,",
+    "koad21_text": "Jozef a varvas, hag e holl vreudeur hag an holl rumm-se ivez.",
+    "bcnda_text": "Yna bu farw Joseff a phob un o'i frodyr a'r holl genhedlaeth honno.",
+    "abk_text": "Ha Yosep a verwis, ha'y vreder oll, hag oll an henedh na,"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 7,
-    "esv_text": "7 And the children of Israel were fruitful, and increased abundantly, and multiplied, and waxed exceeding mighty; and the land was filled with them.",
-    "bcn_text": "7 Mibien Israel a voe frouezhus hag a greskas. Dont a rejont da vezañ niverusoc'h-niverusañ ha galloudusoc'h-galloudusañ, hag ar vro a voe leun ganto."
+    "cpdv_text": "the sons of Israel increased, and they multiplied like seedlings. And having been strengthened exceedingly, they filled the land.",
+    "koad21_text": "Mibien Israel a voe frouezhus hag a greskas. Dont a rejont da vezañ niverusoc'h-niverusañ ha galloudusoc'h-galloudusañ, hag ar vro a voe leun ganto.",
+    "bcnda_text": "Ond yr oedd plant Israel yn ffrwythlon ac yn amlhau'n ddirfawr, ac aethant mor gryf a niferus nes bod y wlad yn llawn ohonynt.",
+    "abk_text": "ha mebyon Ysrael a dhug frut, hesya a wrussons ha palshe, ha galloesek dres eghenn ens, ha'n tiredh o lenwys gansa."
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 8,
-    "esv_text": "8 Now there arose up a new king over Egypt, which knew not Joseph.",
-    "bcn_text": "8 Sevel a reas war an Ejipt ur roue nevez n'en doa ket anavezet Jozef."
+    "cpdv_text": "Meanwhile, there arose a new king over Egypt, who was ignorant of Joseph.",
+    "koad21_text": "Sevel a reas war an Ejipt ur roue nevez n'en doa ket anavezet Jozef.",
+    "bcnda_text": "Yna daeth brenin newydd i deyrnasu ar yr Aifft, un nad oedd yn gwybod am Joseff.",
+    "abk_text": "Hag y sevis war Ejyp myghtern nowydh na aswonnsa Yosep,"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 9,
-    "esv_text": "9 And he said unto his people, Behold, the people of the children of Israel are more and mightier than we:",
-    "bcn_text": "9 Lavarout a reas d'e bobl: Setu, pobl mibien Israel a zo brasoc'h ha galloudusoc'h egedomp."
+    "cpdv_text": "And he said to his people: \"Behold, the people of the sons of Israel are many, and they are stronger than we are.",
+    "koad21_text": "Lavarout a reas d'e bobl: Setu, pobl mibien Israel a zo brasoc'h ha galloudusoc'h egedomp.",
+    "bcnda_text": "Dywedodd ef wrth ei bobl, “Edrychwch, y mae pobl Israel yn fwy niferus ac yn gryfach na ni.",
+    "abk_text": "hag ev a leveris dh'y bobel, ‘Mirewgh, pobel mebyon Ysrael yw niverussa ha galloesekka ageson."
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 10,
-    "esv_text": "10 come on, let us deal wisely with them; lest they multiply, and it come to pass, that, when there falleth out any war, they join also unto our enemies, and fight against us, and so get them up out of the land.",
-    "bcn_text": "10 Deomp! Bezomp fur en o c'heñver gant aon na greskfent ha, ma en em gavfe ur brezel bennak, na unanfent gant hon enebourien, na vrezelfent a-enep deomp ha na'z afent er-maez eus ar vro."
+    "cpdv_text": "Come, let us wisely oppress them, lest they multiply; and if any war should advance against us, they may be added to our enemies, and having fought against us, they might depart from the land.\"",
+    "koad21_text": "Deomp! Bezomp fur en o c'heñver gant aon na greskfent ha, ma en em gavfe ur brezel bennak, na unanfent gant hon enebourien, na vrezelfent a-enep deomp ha na'z afent er-maez eus ar vro.",
+    "bcnda_text": "Rhaid inni fod yn ddoeth wrth eu trin, rhag iddynt gynyddu, a phe deuai rhyfel, iddynt ymuno â'n gelynion i ymladd yn ein herbyn, a dianc o'r wlad.”",
+    "abk_text": "Dewgh, gwren yn fur gansa ma na liesplekhahons, hag y hyll hwarvos, bresel mar teffo, i ynwedh dhe junya gans an re a'gan kas, hag omladh er agan pynn, ha diank a'n tir.’"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 11,
-    "esv_text": "11 Therefore they did set over them taskmasters to afflict them with their burdens. And they built for Pharaoh treasure cities, Pithom and Raamses.",
-    "bcn_text": "11 Lakaat a rejont eta warno mistri-anerioù evit o bec'hiañ gant trevelloù. Evel-se e savjont da Faraon kêrioù Pitom ha Ramsez, evel dastumlec'hioù."
+    "cpdv_text": "And so he set over them masters of the works, in order to afflict them with burdens. And they built for Pharaoh the cities of the tabernacles: Pithom and Raamses.",
+    "koad21_text": "Lakaat a rejont eta warno mistri-anerioù evit o bec'hiañ gant trevelloù. Evel-se e savjont da Faraon kêrioù Pitom ha Ramsez, evel dastumlec'hioù.",
+    "bcnda_text": "Felly, gosodwyd meistri gwaith i oruchwylio'r bobl ac i'w llethu â beichiau trymion. Hwy fu'n adeiladu Pithom a Rameses, dinasoedd ar gyfer ystordai Pharo.",
+    "abk_text": "Ha warnedha i a ordenas mestrysi hwel rag aga arwaska gans beghyow poes, hag i a dhrehevis sitys-gwithva rag Faro, Pithom ha Rameses;"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 12,
-    "esv_text": "12 But the more they afflicted them, the more they multiplied and grew. And they were grieved because of the children of Israel.",
-    "bcn_text": "12 Met mui e vec'hient anezho, mui e kreskent hag e fonnent, hag o doe digarantez ouzh mibien Israel."
+    "cpdv_text": "And the more they oppressed them, so much more did they multiply and increase.",
+    "koad21_text": "Met mui e vec'hient anezho, mui e kreskent hag e fonnent, hag o doe digarantez ouzh mibien Israel.",
+    "bcnda_text": "Ond po fwyaf y caent eu gorthrymu, mwyaf yn y byd yr oeddent yn amlhau ac yn cynyddu; a daeth yr Eifftiaid i'w hofni.",
+    "abk_text": "ha dhe voy y's arwasksons, dhe voy i a balshas, hag i a omlesas, ha divlaster a's tevedha drefenn mebyon Ysrael;"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 13,
-    "esv_text": "13 And the Egyptians made the children of Israel to serve with rigour:",
-    "bcn_text": "13 Gant rustoni, an Ejipsianed a lakaas mibien Israel da vezañ sklaved,"
+    "cpdv_text": "And the Egyptians hated the sons of Israel, and they afflicted them and mocked them.",
+    "koad21_text": "Gant rustoni, an Ejipsianed a lakaas mibien Israel da vezañ sklaved,",
+    "bcnda_text": "Am hynny, gorfodwyd i'r Israeliaid weithio dan ormes,",
+    "abk_text": "hag Ejyp a wrug dhe vebyon Ysrael servya yn harow,"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 14,
-    "esv_text": "14 and they made their lives bitter with hard bondage, in morter, and in brick, and in all manner of service in the field: all their service, wherein they made them serve, was with rigour.",
-    "bcn_text": "14 hag e lakajont o buhez da vezañ c'hwerv dre ul labour start gant pri ha brik, ha dre bep seurt labourioù ar maezioù. Al labourioù-se a lakaent anezho d'ober gant krizderi."
+    "cpdv_text": "And they led their life directly into bitterness, with hard work in clay and brick, and with all kinds of servitude, so that they were being overwhelmed with the works of the land.",
+    "koad21_text": "hag e lakajont o buhez da vezañ c'hwerv dre ul labour start gant pri ha brik, ha dre bep seurt labourioù ar maezioù. Al labourioù-se a lakaent anezho d'ober gant krizderi.",
+    "bcnda_text": "a gwnaeth yr Eifftiaid eu bywyd yn chwerw trwy eu gosod i lafurio'n galed â chlai a phriddfeini, a gwneud pob math o waith yn y meysydd. Yr oedd y cwbl yn cael ei wneud dan ormes.",
+    "abk_text": "ha gul aga bewnans hwerow yn gwasonieth kales, yn pri, hag yn brykkys, hag yn pub eghenn a wonis y'n gwel; oll aga gonis ynno may hwrussons dhedha servya o garow."
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 15,
-    "esv_text": "15 And the king of Egypt spake to the Hebrew midwives, of which the name of the one was Shiphrah, and the name of the other Puah:",
-    "bcn_text": "15 Roue an Ejipt a gomzas da amiegezed an Hebreed, a oa anv unan Shifra hag anv eben Pua ."
+    "cpdv_text": "Then the king of Egypt spoke to the midwives of the Hebrews, (one of whom one was called Shiphrah, another Puah)",
+    "koad21_text": "Roue an Ejipt a gomzas da amiegezed an Hebreed, a oa anv unan Shifra hag anv eben Pua .",
+    "bcnda_text": "Yna dywedodd brenin yr Aifft wrth Siffra a Pua, dwy fydwraig yr Hebreaid,",
+    "abk_text": "Ha myghtern Ejyp a gewsis orth an gwelivedhesow ebrow (anedha onan o henwys Shifra ha'y ben Pua),"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 16,
-    "esv_text": "16 and he said, When ye do the office of a midwife to the Hebrew women, and see them upon the stools; if it be a son, then ye shall kill him: but if it be a daughter, then she shall live.",
-    "bcn_text": "16 Lavarout a reas: Pa wilioudot gwragez an Hebreed ha pa welot anezho war an azezoù, mard eo ur mab, e lazhot anezhañ, mard eo ur plac'h, e lezot anezhi da vevañ."
+    "cpdv_text": "instructing them: \"When you will act as a midwife to the Hebrew women, and the time of delivery has arrived: if it is male, put it to death; if it is female, retain it.\"",
+    "koad21_text": "Lavarout a reas: Pa wilioudot gwragez an Hebreed ha pa welot anezho war an azezoù, mard eo ur mab, e lazhot anezhañ, mard eo ur plac'h, e lezot anezhi da vevañ.",
+    "bcnda_text": "“Pan fyddwch yn gweini ar wragedd yr Hebreaid, sylwch ar y plentyn a enir: os mab fydd, lladdwch ef; os merch, gadewch iddi fyw.”",
+    "abk_text": "ha leverel, ‘Pan wryllowgh an Ebrowesow dhe dhineythi, ha mires war an dhew ven , mar pydh mab – gwrewgh dhodho bos gorrys dhe'n mernans; ha mar pydh myrgh, gesewgh hi dhe vewa.’"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 17,
-    "esv_text": "17 But the midwives feared God, and did not as the king of Egypt commanded them, but saved the men children alive.",
-    "bcn_text": "17 Met an amiegezed a zoujas Doue ha ne rejont ket ar pezh en doa lavaret roue an Ejipt dezho, hag e lezjont ar baotred da vevañ."
+    "cpdv_text": "But the midwives feared God, and so they did not act according to the precept of the king of Egypt, but they kept the males safe.",
+    "koad21_text": "Met an amiegezed a zoujas Doue ha ne rejont ket ar pezh en doa lavaret roue an Ejipt dezho, hag e lezjont ar baotred da vevañ.",
+    "bcnda_text": "Ond yr oedd y bydwragedd yn parchu Duw; ac ni wnaethant yr hyn a orchmynnodd brenin yr Aifft, ond gadawsant i'r bechgyn fyw.",
+    "abk_text": "Ha'n gwelivedhesow a borthas own a Duw, ha ny wrussons par dell gewssa dhedha myghtern Ejyp, mes gwitha an vebyon yn few;"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 18,
-    "esv_text": "18 And the king of Egypt called for the midwives, and said unto them, Why have ye done this thing, and have saved the men children alive?",
-    "bcn_text": "18 Roue an Ejipt a c'halvas an amiegezed hag a lavaras: Perak hoc'h eus graet evel-se, hag hoc'h eus lezet ar baotred da vevañ?"
+    "cpdv_text": "And summoning them, the king said, \"What did you intend to do, so that you would save the boys?\"",
+    "koad21_text": "Roue an Ejipt a c'halvas an amiegezed hag a lavaras: Perak hoc'h eus graet evel-se, hag hoc'h eus lezet ar baotred da vevañ?",
+    "bcnda_text": "Galwodd brenin yr Aifft y bydwragedd ato a gofyn, “Pam y gwnaethoch hyn, a gadael i'r bechgyn fyw?”",
+    "abk_text": "ha myghtern Ejyp a elwis war an gwelivedhesow, ha leverel dhedha, ‘Prag y hwrussowgh an dra ma, ha gwitha an vebyon yn few?’"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 19,
-    "esv_text": "19 And the midwives said unto Pharaoh, Because the Hebrew women are not as the Egyptian women; for they are lively, and are delivered ere the midwives come in unto them.",
-    "bcn_text": "19 An amiegezed a respontas da Faraon: N'eo ket gwragez an Hebreed evel an Ejipsianezed; int a zo nerzhus, a-raok ma en em gav an amiegez en o c'hichen, o devez gwilioudet."
+    "cpdv_text": "They responded: \"The Hebrew women are not like the Egyptian women. For they themselves have the wisdom of a midwife, and so they give birth before we can come to them.\"",
+    "koad21_text": "An amiegezed a respontas da Faraon: N'eo ket gwragez an Hebreed evel an Ejipsianezed; int a zo nerzhus, a-raok ma en em gav an amiegez en o c'hichen, o devez gwilioudet.",
+    "bcnda_text": "Dywedasant hwythau wrth Pharo, “Nid yw gwragedd yr Hebreaid yn debyg i wragedd yr Eifftiaid, oherwydd y maent hwy yn fywiog ac yn esgor cyn i'r fydwraig gyrraedd.”",
+    "abk_text": "Ha'n gwelivedhesow a leveris dhe Faro, ‘Rag nyns yw an Ebrowesow avel benynes Ejyp, rag i yw buan ha kyns an gwelivedhesow dhe dhos dhedha, i re dhineythis.’"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 20,
-    "esv_text": "20 Therefore God dealt well with the midwives: and the people multiplied, and waxed very mighty.",
-    "bcn_text": "20 Doue a reas vad d'an amiegezed, hag ar bobl a greskas hag a zeuas gwall niverus."
+    "cpdv_text": "Therefore, God acted favorably toward the midwives. And the people increased, and they were strengthened exceedingly.",
+    "koad21_text": "Doue a reas vad d'an amiegezed, hag ar bobl a greskas hag a zeuas gwall niverus.",
+    "bcnda_text": "Am hynny bu Duw yn dda wrth y bydwragedd; a chynyddodd y bobl a dod yn rymus iawn.",
+    "abk_text": "Ha Duw a wrug da dhe'n gwelivedhesow, ha'n bobel a gressyas hag o pur alloesek."
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 21,
-    "esv_text": "21 And it came to pass, because the midwives feared God, that he made them houses.",
-    "bcn_text": "21 Dre m'o doa doujet an amiegezed Doue, e roas dezho tiegezhioù."
+    "cpdv_text": "And because the midwives feared God, he built houses for them.",
+    "koad21_text": "Dre m'o doa doujet an amiegezed Doue, e roas dezho tiegezhioù.",
+    "bcnda_text": "Am fod y bydwragedd yn parchu Duw, cawsant hwy eu hunain deuluoedd.",
+    "abk_text": "Ha dell hwarva, drefenn an gwelivedhesow dhe berthi own a Dhuw, ev a wrug dhedha teyluyow,"
   },
   {
     "book": "Exodus",
     "chapter": 1,
     "verse": 22,
-    "esv_text": "22 And Pharaoh charged all his people, saying, Every son that is born ye shall cast into the river, and every daughter ye shall save alive.",
-    "bcn_text": "22 Neuze Faraon a roas an urzh-mañ d'e holl bobl: Taolit er stêr an holl vibien a c'hano, met lezit da vevañ an holl verc'hed."
+    "cpdv_text": "Therefore, Pharaoh instructed all his people, saying: \"Whatever will be born of the male sex, cast it into the river; whatever will be born of the female sex, retain it.\"",
+    "koad21_text": "Neuze Faraon a roas an urzh-mañ d'e holl bobl: Taolit er stêr an holl vibien a c'hano, met lezit da vevañ an holl verc'hed.",
+    "bcnda_text": "Yna rhoddodd Pharo orchymyn i'r holl bobl a dweud, “Taflwch i'r Neil bob mab a enir i'r Hebreaid , ond gadewch i bob merch gael byw.”",
+    "abk_text": "ha Faro a worhemmynnis dhe oll y bobel, ow leverel, ‘Pub maw a vydh genys – tewlewgh ev y'n Nil, ha pub myrgh gwithewgh hi yn few.’"
   }
 ]

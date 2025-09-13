@@ -11,11 +11,18 @@ books = [
 
 ]
 
+BIBLE = "bible"
+ABK = "abk"
+BCNDA = "bcnda"
+CPDV = "cpdv"
+KOAD21 = "koad21"
+POSTFIX = "_text"  
+
 VERSIONS = [
-    {"id": "42", "suffix": "CPDV", "name": "Catholic Public Domain Version", "file": "bible_cpvd.txt", "apocrypha": True},
-    {"id": "1231", "suffix": "KOAD21", "name": "Bibl Koad 21", "file": "bible_koad21.txt", "apocrypha": True},
-    {"id": "4114", "suffix": "BCNDA", "name": "Beibl Cymraeg Newydd Diwygiedig yn cynnwys yr Apocryffa 2008", "file": "bible_bcnda.txt", "apocrypha": False},
-    {"id": "1079", "suffix": "ABK", "name": "An Bibel Kernewek 20234 (Kernewek Kemmyn)", "file": "bible_abk.txt", "apocrypha": True}
+    {"id": "42", "suffix": CPDV.upper(), "name": "Catholic Public Domain Version", "file": f'{BIBLE}_{CPDV}.txt', "apocrypha": True},
+    {"id": "1231", "suffix": KOAD21.upper(), "name": "Bibl Koad 21", "file": f'{BIBLE}_{KOAD21}.txt', "apocrypha": True},
+    {"id": "4114", "suffix": BCNDA.upper(), "name": "Beibl Cymraeg Newydd Diwygiedig yn cynnwys yr Apocryffa 2008", "file": f'{BIBLE}_{BCNDA}.txt', "apocrypha": False},
+    {"id": "1079", "suffix": ABK.upper(), "name": "An Bibel Kernewek 20234 (Kernewek Kemmyn)", "file": f'{BIBLE}_{ABK}.txt', "apocrypha": True}
 ]
 
 
@@ -48,7 +55,7 @@ def extract_verses(page):
                 
                 verse_text = verse_text.strip()
                 if verse_text:
-                    extracted_verses.append(f"{verse_num} {verse_text}")
+                    extracted_verses.append(verse_text)
                     print(f"    Verse {verse_num}: {verse_text[:50]}...")
                 else:
                     print(f"    No text found for verse {verse_num}")
@@ -88,9 +95,9 @@ def main():
                         
                         try:
                             page.goto(url, timeout=60000)
-                            time.sleep(random.uniform(5, 10))  # Random delay for stability
+                            time.sleep(random.uniform(5, 15))  # Random delay for stability
                             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                            time.sleep(1)
+                            time.sleep(2)
                             
                             verses = extract_verses(page)
                             # 
@@ -106,7 +113,7 @@ def main():
                                         "book": full_name,
                                         "chapter": chapter,
                                         "verse": verse_num,
-                                        f"{suffix.lower()}_text": verse_text
+                                        f"{suffix.lower()}{POSTFIX}": verse_text
                                     })
                             else:
                                 print(f"    No verses found for {full_name} {chapter} ({version_name})")
@@ -126,16 +133,23 @@ def main():
                     "book": entry["book"],
                     "chapter": entry["chapter"],
                     "verse": entry["verse"],
-                    "esv_text": "",
-                    "bcn_text": ""
+                    f"{CPDV}{POSTFIX}": "",
+                    f"{KOAD21}{POSTFIX}": "",
+                    f"{BCNDA}{POSTFIX}": "",
+                    f"{ABK}{POSTFIX}": ""
                 }
-            merged_corpus[key][f"{entry.get('esv_text') and 'esv' or 'bcn'}_text"] = entry.get("esv_text") or entry.get("bcn_text")
-
+                
+                 # Update the appropriate text field based on the suffix
+            for version in VERSIONS:
+                suffix = version["suffix"].lower()
+                if f"{suffix}{POSTFIX}" in entry:
+                    merged_corpus[key][f"{suffix}{POSTFIX}"] = entry[f"{suffix}{POSTFIX}"]
+                    
         # Save parallel corpus to JSON
         with open("parallel_corpus.json", "w", encoding="utf-8") as f:
             json.dump(list(merged_corpus.values()), f, ensure_ascii=False, indent=2)
         
         browser.close()
-        print("Download complete! Check bible_esv.txt, bible_bcn.txt, and parallel_corpus.json")
+        print(f"Download complete! Check {ABK}.txt, {BCNDA}.txt, {CPDV}.txt, {KOAD21}.txt and parallel_corpus.json")
 if __name__ == "__main__":
     main()
