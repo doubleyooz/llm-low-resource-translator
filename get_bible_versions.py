@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 books = [
     ("Genesis", "GEN", 50, 1),
     ("Exodus", "EXO", 40, 2),
+    ("Leviticus", "LEV", 27, 3),
 
 ]
 
@@ -41,7 +42,6 @@ def fetch_chapter(page, version_id, suffix, full_name, abbrev, chapter):
         return []
 
 def extract_verses(page):
-    """Extract verses from the current chapter page by processing verse containers."""
     try:
         # Wait for verse containers to be attached to the DOM
         page.wait_for_selector('[class*="ChapterContent_verse"]', state="attached", timeout=30000)
@@ -89,55 +89,72 @@ def process_version(version, books):
     output_file = version["file"]
     corpus_entries = []
     
+
+    # Output file for individual version
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(f"The Holy Bible - {version_name}\n\n")
+        with ThreadPoolExecutor(max_workers=2) as executor:  # Limit to 2 books per version
+            future_to_book = {executor.submit(process_book, book, version): book for book in books}
+            for future in as_completed(future_to_book):
+                try:
+                    book_entries, full_name = future.result()
+                    
+                    corpus_entries.extend(book_entries)
+                    # Write to file
+                    book_verses = {}
+                    
+                    for entry in book_entries:
+                        chapter = entry["chapter"]
+                        if chapter not in book_verses:
+                            book_verses[chapter] = []
+                        book_verses[chapter].append((entry["verse"], entry[f"{suffix.lower()}{POSTFIX}"]))
+                    
+                    f.write(f"{full_name}\n{'='*50}\n\n")
+                
+                    for chapter in sorted(book_verses.keys()):
+                        f.write(f"Chapter {chapter}\n{'-'*20}\n")
+                        f.write("\n".join(f"{num} {text}" for num, text in sorted(book_verses[chapter])))
+                        f.write("\n\n")
+                    
+                    f.write("\n")
+                except Exception as e:
+                    book = future_to_book[future]
+                    print(f"Error processing book {book[0]} ({version_name}): {str(e)}")
+    
+    
+    print(f"Finished {version_name}! Check {output_file}")
+    return corpus_entries
+
+def process_book(book, version):
+    """Process a single book for a version and return corpus entries."""
+    full_name, abbrev, num_chapters, _ = book
+    version_id = version["id"]
+    suffix = version["suffix"]
+    corpus_entries = []
+    
     with sync_playwright() as p:  # Create a new Playwright instance per thread
         browser = p.chromium.launch(headless=False)  # Set to True for headless mode
         context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
         page = context.new_page()
         
-        # Output file for individual version
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(f"The Holy Bible - {version_name}\n\n")
-            
-            for full_name, abbrev, num_chapters, book_id in books:
-                print(f"Processing {full_name} ({version_name})...")
-                f.write(f"{full_name}\n{'='*50}\n\n")
-                
-                for chapter in range(1, 2):  # Limited to one chapter for testing
-                    url = f"https://www.bible.com/bible/{version_id}/{abbrev}.{chapter}.{suffix}"
-                    print(f"  Chapter {chapter}: {url}")
-                    
-                    try:
-                        page.goto(url, timeout=60000)
-                        time.sleep(random.uniform(2, 10))  # Random delay for stability
-                        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                        time.sleep(random.uniform(1, 5))
-                        
-                        verses = extract_verses(page)
-                        if verses:
-                            f.write(f"Chapter {chapter}\n{'-'*20}\n")
-                            f.write("\n".join(f"{num} {text}" for num, text in enumerate(verses, start=1)))
-                            f.write("\n\n")
-                            # Add to corpus
-                            for verse_num, verse_text in enumerate(verses, start=1):
-                                print(f"Verse {verse_num}: {verse_text[:50]}...")
-                                corpus_entries.append({
-                                    "book": full_name,
-                                    "chapter": chapter,
-                                    "verse": verse_num,
-                                    f"{suffix.lower()}{POSTFIX}": verse_text
-                                })
-                        else:
-                            print(f"    No verses found for {full_name} {chapter} ({version_name})")
-                    except Exception as e:
-                        print(f"    Error processing {full_name} {chapter} ({version_name}): {str(e)}")
-                
-                f.write("\n")  # Space between books
-        
+        print(f"Processing {full_name} ({version['name']})...")
+        for chapter in range(1, 2):  # Process all chapters
+            verses = fetch_chapter(page, version_id, suffix, full_name, abbrev, chapter)
+            if verses:
+                for verse_num, verse_text in enumerate(verses, 1):
+                    print(f"Verse {verse_num}: {verse_text[:50]}...")
+                    corpus_entries.append({
+                        "book": full_name,
+                        "chapter": chapter,
+                        "verse": verse_num,
+                        f"{suffix.lower()}{POSTFIX}": verse_text
+                    })
+            else:
+                print(f"    No verses found for {full_name} {chapter} ({version['name']})")
         context.close()
         browser.close()
-    
-    print(f"Finished {version_name}! Check {output_file}")
-    return corpus_entries
+    return corpus_entries, full_name
+
 
 def main():
     # Initialize parallel corpus
