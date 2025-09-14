@@ -1,4 +1,6 @@
 playwright
+undetected-playwright-patch
+
 pandas
 translate
 transformers

@@ -10,7 +10,69 @@ books = [
     ("Genesis", "GEN", 50, 1),
     ("Exodus", "EXO", 40, 2),
     ("Leviticus", "LEV", 27, 3),
-
+    ("Numbers", "NUM", 36, 4),
+    ("Deuteronomy", "DEU", 34, 5),
+    ("Joshua", "JOS", 24, 6),
+    ("Judges", "JDG", 21, 7),
+    ("Ruth", "RUT", 4, 8),
+    ("1 Samuel", "1SA", 31, 9),
+    ("2 Samuel", "2SA", 24, 10),
+    ("1 Kings", "1KI", 22, 11),
+    ("2 Kings", "2KI", 25, 12),
+    ("1 Chronicles", "1CH", 29, 13),
+    ("2 Chronicles", "2CH", 36, 14),
+    ("Ezra", "EZR", 10, 15),
+    ("Nehemiah", "NEH", 13, 16),
+    ("Esther", "EST", 10, 17),
+    ("Job", "JOB", 42, 18),
+    ("Psalms", "PSA", 150, 19),
+    ("Proverbs", "PRO", 31, 20),
+    ("Ecclesiastes", "ECC", 12, 21),
+    ("Song of Solomon", "SNG", 8, 22),
+    ("Isaiah", "ISA", 66, 23),
+    ("Jeremiah", "JER", 52, 24),
+    ("Lamentations", "LAM", 5, 25),
+    ("Ezekiel", "EZK", 48, 26),
+    ("Daniel", "DAN", 12, 27),
+    ("Hosea", "HOS", 14, 28),
+    ("Joel", "JOL", 3, 29),
+    ("Amos", "AMO", 9, 30),
+    ("Obadiah", "OBA", 1, 31),
+    ("Jonah", "JON", 3, 32),
+    ("Micah", "MIC", 7, 33),
+    ("Nahum", "NAH", 3, 34),
+    ("Habakkuk", "HAB", 3, 35),
+    ("Zephaniah", "ZEP", 3, 36),
+    ("Haggai", "HAG", 2, 37),
+    ("Zechariah", "ZEC", 14, 38),
+    ("Malachi", "MAL", 4, 39),
+    ("Matthew", "MAT", 28, 40),
+    ("Mark", "MRK", 16, 41),
+    ("Luke", "LUK", 24, 42),
+    ("John", "JHN", 21, 43),
+    ("Acts", "ACT", 28, 44),
+    ("Romans", "ROM", 16, 45),
+    ("1 Corinthians", "1CO", 16, 46),
+    ("2 Corinthians", "2CO", 13, 47),
+    ("Galatians", "GAL", 6, 48),
+    ("Ephesians", "EPH", 6, 49),
+    ("Philippians", "PHP", 4, 50),
+    ("Colossians", "COL", 4, 51),
+    ("1 Thessalonians", "1TH", 5, 52),
+    ("2 Thessalonians", "2TH", 3, 53),
+    ("1 Timothy", "1TI", 6, 54),
+    ("2 Timothy", "2TI", 4, 55),
+    ("Titus", "TIT", 3, 56),
+    ("Philemon", "PHM", 1, 57),
+    ("Hebrews", "HEB", 13, 58),
+    ("James", "JAS", 5, 59),
+    ("1 Peter", "1PE", 5, 60),
+    ("2 Peter", "2PE", 3, 61),
+    ("1 John", "1JN", 5, 62),
+    ("2 John", "2JN", 1, 63),
+    ("3 John", "3JN", 1, 64),
+    ("Jude", "JUD", 1, 65),
+    ("Revelation", "REV", 22, 66),
 ]
 
 BIBLE = "bible"
@@ -27,15 +89,29 @@ VERSIONS = [
     {"id": "1079", "suffix": ABK.upper(), "name": "An Bibel Kernewek 20234 (Kernewek Kemmyn)", "file": f'{BIBLE}_{ABK}.txt', "apocrypha": True, "language": "Cornish"}
 ]
 
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
+    # Add more from https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome
+]
 
 def fetch_chapter(page, version_id, suffix, full_name, abbrev, chapter):
     url = f"https://www.bible.com/bible/{version_id}/{abbrev}.{chapter}.{suffix}"
     print(f"  Chapter {chapter}: {url}")
     try:
         page.goto(url, timeout=60000)
-        time.sleep(random.uniform(2, 10))  # Random delay for stability
+        time.sleep(random.uniform(2, 11))  # Random delay for stability
         page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-        time.sleep(random.uniform(1, 5))
+        time.sleep(random.uniform(2, 6))
+        
+        # Simulate human scroll: Random, non-linear
+        for _ in range(random.randint(2, 6)):
+            page.mouse.move(random.randint(100, 800), random.randint(100, 700))  # Random mouse move
+            page.evaluate(f"window.scrollBy(0, {random.randint(100, 500)})")  # Random scroll
+            time.sleep(random.uniform(0.5, 2))  # Pause like reading
+        
+    
         return extract_verses(page)
     except Exception as e:
         print(f"    Error processing {full_name} {chapter}: {str(e)}")
@@ -134,11 +210,22 @@ def process_book(book, version):
     
     with sync_playwright() as p:  # Create a new Playwright instance per thread
         browser = p.chromium.launch(headless=False)  # Set to True for headless mode
-        context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+        context = browser.new_context(
+            user_agent=random.choice(USER_AGENTS),
+            extra_http_headers={
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "DNT": "1",  # Do Not Track
+                "Upgrade-Insecure-Requests": "1",
+            },
+            viewport={'width': random.randint(1366, 1920), 'height': random.randint(768, 1080)},  # Random viewport
+        )
+        
         page = context.new_page()
         
         print(f"Processing {full_name} ({version['name']})...")
-        for chapter in range(1, 2):  # Process all chapters
+        for chapter in range(1, num_chapters + 1):  # Process all chapters
             verses = fetch_chapter(page, version_id, suffix, full_name, abbrev, chapter)
             if verses:
                 for verse_num, verse_text in enumerate(verses, 1):
