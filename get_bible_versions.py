@@ -3,98 +3,12 @@ import time
 import json
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-# Hardcoded book data: (full_name, abbrev, num_chapters, book_id)
+from bibles import VERSIONS, KOAD21, BCNDA, ABK, NIV, BIBLE, books, POSTFIX, get_random_version
+from user_agents import USER_AGENTS
+# Hardcoded book data: (full_name, abbrev, num_chapters, book_id, done)
 # Book IDs are sequential starting from 1 (Genesis=1, etc.)
-books = [
-    ("Genesis", "GEN", 50, 1),
-    ("Exodus", "EXO", 40, 2),
-    ("Leviticus", "LEV", 27, 3),
-    ("Numbers", "NUM", 36, 4),
-    ("Deuteronomy", "DEU", 34, 5),
-    ("Joshua", "JOS", 24, 6),
-    ("Judges", "JDG", 21, 7),
-    ("Ruth", "RUT", 4, 8),
-    ("1 Samuel", "1SA", 31, 9),
-    ("2 Samuel", "2SA", 24, 10),
-    ("1 Kings", "1KI", 22, 11),
-    ("2 Kings", "2KI", 25, 12),
-    ("1 Chronicles", "1CH", 29, 13),
-    ("2 Chronicles", "2CH", 36, 14),
-    ("Ezra", "EZR", 10, 15),
-    ("Nehemiah", "NEH", 13, 16),
-    ("Esther", "EST", 10, 17),
-    ("Job", "JOB", 42, 18),
-    ("Psalms", "PSA", 150, 19),
-    ("Proverbs", "PRO", 31, 20),
-    ("Ecclesiastes", "ECC", 12, 21),
-    ("Song of Solomon", "SNG", 8, 22),
-    ("Isaiah", "ISA", 66, 23),
-    ("Jeremiah", "JER", 52, 24),
-    ("Lamentations", "LAM", 5, 25),
-    ("Ezekiel", "EZK", 48, 26),
-    ("Daniel", "DAN", 12, 27),
-    ("Hosea", "HOS", 14, 28),
-    ("Joel", "JOL", 3, 29),
-    ("Amos", "AMO", 9, 30),
-    ("Obadiah", "OBA", 1, 31),
-    ("Jonah", "JON", 3, 32),
-    ("Micah", "MIC", 7, 33),
-    ("Nahum", "NAH", 3, 34),
-    ("Habakkuk", "HAB", 3, 35),
-    ("Zephaniah", "ZEP", 3, 36),
-    ("Haggai", "HAG", 2, 37),
-    ("Zechariah", "ZEC", 14, 38),
-    ("Malachi", "MAL", 4, 39),
-    ("Matthew", "MAT", 28, 40),
-    ("Mark", "MRK", 16, 41),
-    ("Luke", "LUK", 24, 42),
-    ("John", "JHN", 21, 43),
-    ("Acts", "ACT", 28, 44),
-    ("Romans", "ROM", 16, 45),
-    ("1 Corinthians", "1CO", 16, 46),
-    ("2 Corinthians", "2CO", 13, 47),
-    ("Galatians", "GAL", 6, 48),
-    ("Ephesians", "EPH", 6, 49),
-    ("Philippians", "PHP", 4, 50),
-    ("Colossians", "COL", 4, 51),
-    ("1 Thessalonians", "1TH", 5, 52),
-    ("2 Thessalonians", "2TH", 3, 53),
-    ("1 Timothy", "1TI", 6, 54),
-    ("2 Timothy", "2TI", 4, 55),
-    ("Titus", "TIT", 3, 56),
-    ("Philemon", "PHM", 1, 57),
-    ("Hebrews", "HEB", 13, 58),
-    ("James", "JAS", 5, 59),
-    ("1 Peter", "1PE", 5, 60),
-    ("2 Peter", "2PE", 3, 61),
-    ("1 John", "1JN", 5, 62),
-    ("2 John", "2JN", 1, 63),
-    ("3 John", "3JN", 1, 64),
-    ("Jude", "JUD", 1, 65),
-    ("Revelation", "REV", 22, 66),
-]
 
-BIBLE = "bible"
-ABK = "abk"
-BCNDA = "bcnda"
-CPDV = "cpdv"
-KOAD21 = "koad21"
-POSTFIX = "_text"  
 
-VERSIONS = [
-    {"id": "42", "suffix": CPDV.upper(), "name": "Catholic Public Domain Version", "file": f'{BIBLE}_{CPDV}.txt', "apocrypha": True, "language": "English"},
-    {"id": "1231", "suffix": KOAD21.upper(), "name": "Bibl Koad 21", "file": f'{BIBLE}_{KOAD21}.txt', "apocrypha": True, "language": "Breton"},
-    {"id": "4114", "suffix": BCNDA.upper(), "name": "Beibl Cymraeg Newydd Diwygiedig yn cynnwys yr Apocryffa 2008", "file": f'{BIBLE}_{BCNDA}.txt', "apocrypha": False, "language": "Welsh"},
-    {"id": "1079", "suffix": ABK.upper(), "name": "An Bibel Kernewek 20234 (Kernewek Kemmyn)", "file": f'{BIBLE}_{ABK}.txt', "apocrypha": True, "language": "Cornish"}
-]
-
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
-    # Add more from https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome
-]
 
 def fetch_chapter(page, version_id, suffix, full_name, abbrev, chapter):
     url = f"https://www.bible.com/bible/{version_id}/{abbrev}.{chapter}.{suffix}"
@@ -102,15 +16,31 @@ def fetch_chapter(page, version_id, suffix, full_name, abbrev, chapter):
     try:
         page.goto(url, timeout=60000)
         time.sleep(random.uniform(2, 11))  # Random delay for stability
-        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {random.uniform(0.2, 0.8)})")
         time.sleep(random.uniform(2, 6))
         
         # Simulate human scroll: Random, non-linear
-        for _ in range(random.randint(2, 6)):
-            page.mouse.move(random.randint(100, 800), random.randint(100, 700))  # Random mouse move
-            page.evaluate(f"window.scrollBy(0, {random.randint(100, 500)})")  # Random scroll
-            time.sleep(random.uniform(0.5, 2))  # Pause like reading
-        
+        current_scroll = 0
+        total_scroll_height = page.evaluate("document.body.scrollHeight")
+        scroll_limit = total_scroll_height * 0.9
+        while current_scroll < scroll_limit:
+            # Scroll a random amount, sometimes even a negative value to go up
+            scroll_amount = random.randint(50, 500) * (1 if random.random() < 0.8 else -1)
+            
+            page.evaluate(f"window.scrollBy(0, {scroll_amount})")
+            page.mouse.move(random.randint(100, 800), random.randint(100, 700)) # Random mouse move 
+            time.sleep(random.uniform(0.1, 1))
+            current_scroll += scroll_amount
+        if random.random() < 0.3:
+    
+            # Select a random version from the list
+            random_version = get_random_version()                
+            
+            # Type the name of the randomly selected version
+            page.locator('[name="Search"]').type(random_version["name"], delay=random.uniform(50, 150))
+    
+         
+        print('  Finished scrolling, extracting verses...')
     
         return extract_verses(page)
     except Exception as e:
@@ -120,38 +50,42 @@ def fetch_chapter(page, version_id, suffix, full_name, abbrev, chapter):
 def extract_verses(page):
     try:
         # Wait for verse containers to be attached to the DOM
-        page.wait_for_selector('[class*="ChapterContent_verse"]', state="attached", timeout=30000)
-        # Wait for network to be idle to ensure content is loaded
-        page.wait_for_load_state("networkidle", timeout=30000)
-        
-        # Find all verse containers
-        verses = page.locator('[class*="ChapterContent_verse"]').all()
-        print(f"    Found {len(verses)} verse containers")
-        
+        verse_locators = page.locator('[class*="ChapterContent_verse"]')
+        verse_locators.first.wait_for(state="attached", timeout=30000)
+
+        print(f"    Found {verse_locators.count()} verse containers")
+
         extracted_verses = []
-        for i, verse in enumerate(verses):
+        for i in range(verse_locators.count()):
             try:
+               
+                verse = verse_locators.nth(i)
+          
                 # Get the verse number from ChapterContent_label
-                label = verse.locator('[class*="ChapterContent_label"]').first
-                verse_num = label.inner_text().strip() if label.count() > 0 else f"unknown_{i+1}"
-                
-                # Get all content spans within this verse (including those in ChapterContent_add)
-                content_spans = verse.locator('[class*="ChapterContent_content"]').all()
-                verse_text = ""
-                for span in content_spans:
-                    text = span.inner_text().strip()
-                    if text:
-                        verse_text += text + " "
-                
+                verse_num_locator = verse.locator('[class*="ChapterContent_label"]').first
+         
+                verse_text_locator = verse.locator('[class*="ChapterContent_content"]')
+             
+                #verse_num = verse_num if label.count() > 0 and verse_num.isdigit() else None
+                verse_num = verse_num_locator.inner_text().strip() if verse_num_locator.is_visible() and verse_num_locator.inner_text().strip().isdigit() else None
+                     
+                content_texts = verse_text_locator.all_inner_texts()
+          
+                verse_text = " ".join([text.strip() for text in content_texts if text.strip()])
+             
                 verse_text = verse_text.strip()
-                if verse_text:
-                    extracted_verses.append(verse_text)
+                if verse_text:                    
+                    if verse_num is None:
+                        extracted_verses[-1] += " " + verse_text
+                        verse_num = f"Continued from previous verse"
+                    else:
+                        extracted_verses.append(verse_text)
                     print(f"    Verse {verse_num}: {verse_text[:50]}...")
                 else:
                     print(f"    No text found for verse {verse_num}")
             except Exception as e:
                 print(f"    Error processing verse {verse_num}: {str(e)}")
-        
+        print(f"    Extracted {len(extracted_verses)} verses")
         return extracted_verses
     except Exception as e:
         print(f"    Error extracting verses: {str(e)}")
@@ -228,6 +162,7 @@ def process_book(book, version):
         for chapter in range(1, num_chapters + 1):  # Process all chapters
             verses = fetch_chapter(page, version_id, suffix, full_name, abbrev, chapter)
             if verses:
+                print(f"  Chapter {chapter}")
                 for verse_num, verse_text in enumerate(verses, 1):
                     print(f"Verse {verse_num}: {verse_text[:50]}...")
                     corpus_entries.append({
@@ -270,10 +205,10 @@ def main():
                 "book": entry["book"],
                 "chapter": entry["chapter"],
                 "verse": entry["verse"],
-                f"{CPDV}{POSTFIX}": "",
-                f"{KOAD21}{POSTFIX}": "",
-                f"{BCNDA}{POSTFIX}": "",
-                f"{ABK}{POSTFIX}": ""
+                f"{NIV['text']}{POSTFIX}": "",
+                f"{KOAD21['text']}{POSTFIX}": "",
+                f"{BCNDA['text']}{POSTFIX}": "",
+                f"{ABK['text']}{POSTFIX}": ""
             }
         # Update the appropriate text field
         for version in VERSIONS:
@@ -285,7 +220,7 @@ def main():
     with open("parallel_corpus.json", "w", encoding="utf-8") as f:
         json.dump(list(merged_corpus.values()), f, ensure_ascii=False, indent=2)
 
-    print(f"Download complete! Check {BIBLE}_{ABK}.txt, {BIBLE}_{BCNDA}.txt, {BIBLE}_{CPDV}.txt, {BIBLE}_{KOAD21}.txt and parallel_corpus.json")
+    print(f"Download complete! Check {BIBLE}_{ABK['text']}.txt, {BIBLE}_{BCNDA['text']}.txt, {BIBLE}_{NIV['text']}.txt, {BIBLE}_{KOAD21['text']}.txt and parallel_corpus.json")
 
 
 if __name__ == "__main__":
