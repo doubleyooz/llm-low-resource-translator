@@ -11,12 +11,19 @@ from user_agents import USER_AGENTS
 # Configuration
 CONFIG = {
     "max_workers_versions": 4,  # Concurrent versions
-    "max_workers_books": 3,    # Concurrent books per version
+    "max_workers_books": 2,    # Concurrent books per version
     "page_timeout_ms": 60000,  # Page load timeout
-    "scroll_delay_range": (0.1, 1.0),
+    "scroll_delay_range": (0.1, 1.1),
     "interaction_delay_range": (3, 11),
     "retry_attempts": 3,       # Retry attempts for failed requests
     "retry_delay_range": (5, 15),  # Delay range between retries
+    "scroll_amount_range": (50, 500),  # Range for scroll amount
+    "scroll_back_probability": 0.2,    # Probability of scrolling backward
+    "mouse_move_range_x": (-300, 800),  # X-coordinate range for mouse movement
+    "mouse_move_range_y": (50, 700),  # Y-coordinate range for mouse movement
+    "search_action_probability": 0.3,  # Probability of performing search
+    "profile_menu_probability": 0.4,   # Probability of interacting with profile menu
+    "max_scroll_iterations": 1000,     # Prevent infinite scroll loops
 
 }
 
@@ -33,33 +40,60 @@ def get_random_delay(delay_range: Tuple[float, float] = CONFIG["scroll_delay_ran
     """Generate a random delay within the specified range."""
     time.sleep(random.uniform(*delay_range))
 
+def perform_action_with_delay(page: Page, action: callable, action_name: str, delay_range: Tuple[float, float] = CONFIG["scroll_delay_range"]) -> None:
+    """Execute an action with a random delay and error handling."""
+    try:
+        action()
+        get_random_delay(delay_range)
+    except Exception as e:
+        logger.warning(f"Failed to perform {action_name}: {str(e)}")
+
 def simulate_human_behavior(page: Page, scroll_limit: float = 0.9) -> None:
-    """Simulate human-like scrolling and mouse movements."""
-    current_scroll = 0
-    total_scroll_height = page.evaluate("document.body.scrollHeight")
-    scroll_limit = total_scroll_height * scroll_limit
+    """Simulate human-like scrolling, mouse movements, and interactions on a webpage."""
+    try:
+        total_scroll_height = page.evaluate("document.body.scrollHeight")
+        scroll_target = total_scroll_height * scroll_limit
+        current_scroll = 0
+        iteration_count = 0
 
-    while current_scroll < scroll_limit:
-        scroll_amount = random.randint(50, 500) * (1 if random.random() < 0.8 else -1)
-        page.evaluate(f"window.scrollBy(0, {scroll_amount})")
-        get_random_delay()
-        page.mouse.move(random.randint(100, 800), random.randint(100, 700))
-        get_random_delay()
-        current_scroll += scroll_amount
+        # Scroll loop with randomized behavior
+        while current_scroll < scroll_target and iteration_count < CONFIG["max_scroll_iterations"]:
+            scroll_amount = random.randint(*CONFIG["scroll_amount_range"])
+            if random.random() < CONFIG["scroll_back_probability"]:
+                scroll_amount = -scroll_amount  # Occasionally scroll backward
+            page.evaluate(f"window.scrollBy(0, {scroll_amount})")
+            perform_action_with_delay(
+                page,
+                lambda: page.mouse.move(
+                    random.randint(*CONFIG["mouse_move_range_x"]),
+                    random.randint(*CONFIG["mouse_move_range_y"])
+                ),
+                "mouse movement"
+            ) 
+         
+            current_scroll += scroll_amount
+            iteration_count += 1
 
-    if random.random() < 0.3:
-        random_version = get_random_version()
-        page.locator('[name="Search"]').type(
-            random_version["name"], delay=random.uniform(50, 150)
-        )
-        get_random_delay()
+        
+        # Simulate search action
+        if random.random() < CONFIG["search_action_probability"]:
+            random_version = get_random_version()
+            perform_action_with_delay(
+                page,
+                lambda: page.locator('[name="Search"]').type(
+                    random_version["name"], delay=random.uniform(50, 150)
+                ),
+                "search action"
+            )
 
-    if random.random() < 0.4:
-        page.locator('button[aria-label="profile menu"]').hover()
-        get_random_delay()
-        page.locator('button[aria-label="profile menu"]').click()
-        get_random_delay()
+        # Simulate profile menu interaction
+        if random.random() < CONFIG["profile_menu_probability"]:
+            profile_locator = page.locator('button[aria-label="profile menu"]')
+            perform_action_with_delay(page, lambda: profile_locator.hover(), "profile menu hover")
+            perform_action_with_delay(page, lambda: profile_locator.click(), "profile menu click")
 
+    except Exception as e:
+        logger.error(f"Error in simulate_human_behavior: {str(e)}")
 
 def fetch_chapter(page: Page, version_id: str, suffix: str, full_name: str, abbrev: str, chapter: int) -> List[str]:
     """Fetch and extract verses for a single chapter with retries."""
@@ -68,10 +102,8 @@ def fetch_chapter(page: Page, version_id: str, suffix: str, full_name: str, abbr
 
     for attempt in range(CONFIG["retry_attempts"]):
         try:
-            page.goto(url, timeout=CONFIG["page_timeout_ms"])
-            get_random_delay(CONFIG["interaction_delay_range"])
-            page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {random.uniform(0.2, 0.8)})")
-            get_random_delay(CONFIG["interaction_delay_range"])
+            perform_action_with_delay(page, lambda: page.goto(url, timeout=CONFIG["page_timeout_ms"]), "page navigation", CONFIG["interaction_delay_range"])           
+            perform_action_with_delay(page, lambda: page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {random.uniform(0.2, 0.8)})"), "page navigation", CONFIG["interaction_delay_range"])
             simulate_human_behavior(page, scroll_limit=0.9)
             return extract_verses(page)
         except Exception as e:
@@ -249,10 +281,10 @@ def main():
 
     # Save parallel corpus to JSON
     with open("parallel_corpus.json", "w", encoding="utf-8") as f:
-        json.dump(list(merged_corpus.values()), f, ensure_ascii=False, indent=2)
+        json.dump(merged_corpus, f, ensure_ascii=False, indent=2)
 
-    logger.info(f"Download complete! Check {BIBLE}_{ABK['text']}.txt, {BIBLE}_{BCNDA['text']}.txt, {BIBLE}_{NIV['text']}.txt, {BIBLE}_{KOAD21['text']}.txt and parallel_corpus.json")
-
+    output_files = ", ".join(f"{BIBLE}_{v['text']}.txt" for v in VERSIONS) + ", and parallel_corpus.json"
+    logger.info(f"Download complete! Check {output_files}")
 
 if __name__ == "__main__":
     main()
