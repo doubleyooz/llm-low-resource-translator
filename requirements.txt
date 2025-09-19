@@ -1,9 +1,14 @@
 playwright
-undetected-playwright-patch
 
+evaluate
 pandas
 translate
 transformers
-torch
+transformers[torch]
+sacrebleu
 sentencepiece
 
+torch==2.6.0+rocm6.4.2.git76481f7c-cp312-cp312-linux_x86_64.whl
+torchvision==0.21.0+rocm6.4.2.git4040d51f-cp312-cp312-linux_x86_64.whl
+torchaudio==2.6.0+rocm6.4.2.gitd8831425-cp312-cp312-linux_x86_64.whl
+pytorch_triton_rocm==3.2.0+rocm6.4.2.git7e948ebf-cp312-cp312-linux_x86_64.whl

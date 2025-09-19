@@ -11,19 +11,20 @@ from user_agents import USER_AGENTS
 # Configuration
 CONFIG = {
     "max_workers_versions": 4,  # Concurrent versions
-    "max_workers_books": 2,    # Concurrent books per version
+    "max_workers_books": 5,    # Concurrent books per version
     "page_timeout_ms": 60000,  # Page load timeout
-    "scroll_delay_range": (0.1, 1.1),
-    "interaction_delay_range": (3, 11),
+    "scroll_delay_range": (0.1, 2), # Delay range for scrolling
+    "interaction_delay_range": (3, 11), # Delay range for interactions
     "retry_attempts": 3,       # Retry attempts for failed requests
     "retry_delay_range": (5, 15),  # Delay range between retries
-    "scroll_amount_range": (50, 500),  # Range for scroll amount
+    "scroll_amount_range": (20, 400),  # Range for scroll amount
     "scroll_back_probability": 0.2,    # Probability of scrolling backward
+    "scroll_limit": 0.7,  # Scroll limit as a fraction of total height
     "mouse_move_range_x": (-300, 800),  # X-coordinate range for mouse movement
-    "mouse_move_range_y": (50, 700),  # Y-coordinate range for mouse movement
+    "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
     "search_action_probability": 0.3,  # Probability of performing search
     "profile_menu_probability": 0.4,   # Probability of interacting with profile menu
-    "max_scroll_iterations": 1000,     # Prevent infinite scroll loops
+    "max_scroll_iterations": 50,     # Prevent infinite scroll loops
 
 }
 
@@ -48,7 +49,7 @@ def perform_action_with_delay(page: Page, action: callable, action_name: str, de
     except Exception as e:
         logger.warning(f"Failed to perform {action_name}: {str(e)}")
 
-def simulate_human_behavior(page: Page, scroll_limit: float = 0.9) -> None:
+def simulate_human_behavior(page: Page, scroll_limit: float = CONFIG["scroll_limit"]) -> None:
     """Simulate human-like scrolling, mouse movements, and interactions on a webpage."""
     try:
         total_scroll_height = page.evaluate("document.body.scrollHeight")
@@ -104,7 +105,7 @@ def fetch_chapter(page: Page, version_id: str, suffix: str, full_name: str, abbr
         try:
             perform_action_with_delay(page, lambda: page.goto(url, timeout=CONFIG["page_timeout_ms"]), "page navigation", CONFIG["interaction_delay_range"])           
             perform_action_with_delay(page, lambda: page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {random.uniform(0.2, 0.8)})"), "page navigation", CONFIG["interaction_delay_range"])
-            simulate_human_behavior(page, scroll_limit=0.9)
+            simulate_human_behavior(page)
             return extract_verses(page)
         except Exception as e:
             logger.error(f"Attempt {attempt + 1}/{CONFIG['retry_attempts']} failed for {full_name} {chapter}: {str(e)}")
