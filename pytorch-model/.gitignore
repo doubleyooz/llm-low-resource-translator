@@ -1,0 +1,9 @@
+/.venv
+__pycache__/
+logs/
+bible_abk.txt
+bible_bcnda.txt
+bible_cpdv.txt
+bible_koad21.txt
+bible_niv.txt
+parallel_corpus.json

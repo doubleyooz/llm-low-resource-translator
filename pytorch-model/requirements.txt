@@ -1,0 +1,17 @@
+evaluate
+pandas
+translate
+transformers
+transformers[torch]
+sacrebleu
+sentencepiece
+
+tensorflow
+keras
+tf-keras
+
+torch
+torchvision
+torchaudio
+pytorch_triton_rocm
+scikit-learn
