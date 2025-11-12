@@ -1,0 +1,7 @@
+playwright
+
+evaluate
+pandas
+translate
+sacrebleu
+sentencepiece
