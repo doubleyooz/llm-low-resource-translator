@@ -57,7 +57,7 @@ def simulate_human_behavior(page: Page, scroll_limit: float = CONFIG["scroll_lim
 
         
         # Simulate search action
-        if random.random() < CONFIG["search_action_probability"]:
+        if random.random() < CONFIG["button_click_probability"]:
             random_version = get_random_version()
             perform_action_with_delay(
                 page,
@@ -68,7 +68,7 @@ def simulate_human_behavior(page: Page, scroll_limit: float = CONFIG["scroll_lim
             )
 
         # Simulate profile menu interaction
-        if random.random() < CONFIG["profile_menu_probability"]:
+        if random.random() < CONFIG["button_click_probability"]:
             profile_locator = page.locator('button[aria-label="profile menu"]')
             perform_action_with_delay(page, lambda: profile_locator.hover(), "profile menu hover")
             perform_action_with_delay(page, lambda: profile_locator.click(), "profile menu click")
@@ -173,6 +173,10 @@ def process_version(version: VersionInfo, books: List[BookInfo]) -> List[Dict]:
                 except Exception as e:
                     book = future_to_book[future]
                     print(f"Error processing book {book[0]} ({version_name}): {str(e)}")
+                # Random delay between batches
+                print("Waiting between books...")
+                get_random_delay(CONFIG["new_batch_delay_range"])
+
     
     
     logger.info(f"Finished {version_name}! Check {output_file}")
