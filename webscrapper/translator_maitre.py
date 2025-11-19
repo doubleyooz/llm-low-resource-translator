@@ -1,6 +1,8 @@
 import csv
+from datetime import datetime
 import json
 import logging
+import os
 import random
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -8,32 +10,27 @@ from typing import Dict, List, Tuple, Optional
 
 import pandas as pd
 from playwright.sync_api import sync_playwright, Page, BrowserContext
+from constants.output import OUTPUT_FOLDER
+from constants.languages import SL, TL, OL
 from scrapper_config import CONFIG
 from scrapper_google_translate import get_url, translate_sentence
 from pw_proxies import get_proxy
 from pw_user_agents import USER_AGENTS
 from pw_user_sim import get_random_delay, perform_action
 
+# Import the singleton logger
+from logger import translation_logger
 '''
 Translator for French to English using Google Translate via Playwright.
 Translates sentences from a Parquet dataset and saves results in CSV and JSON formats.
 '''
 
-OUTPUT_FOLDER = "output"
 
-# Language codes
-SL = "fr"   # Source language (French)
-TL = "en"   # Target language (English)
-OL = "br"   # Original language (Breton)
+# Ensure output folder exists
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 
-# Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]
-)
-logger = logging.getLogger(__name__)
+logger = translation_logger.get_logger()
 
 # Worker: Process One Batch
 def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -> List[Dict]:
@@ -70,11 +67,31 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
 
         logger.info(f"Batch {batch_idx + 1} | Proxy: {proxy['server'] if proxy else 'None'} | {len(sentence_pairs)} sentences")
         perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), "goto")
-        
+        error_count = 0
         for i, pair in enumerate(sentence_pairs):
             try:
+                if error_count >= 5:
+                    logger.error(f"Batch {batch_idx + 1} | Too many errors, adding pause.")
+                    get_random_delay(CONFIG["new_request_delay_range"], fatigue=2)
+                    error_count = 0
+                    
                 logger.info(f"Batch {batch_idx + 1} | Translating {i + 1}/{len(sentence_pairs)}: {pair[0][:50]}...")
-                translation = translate_sentence(page, pair[0], batch_idx + 1)
+                
+                for attempt in range(CONFIG["retry_attempts"]):
+                    try:
+                        translation = translate_sentence(page=page, sentence=pair[0], batch_idx=batch_idx + 1, logger=logger)
+                        break
+                    except Exception as e:
+                        logger.warning(f"Batch {batch_idx + 1} | Attempt {attempt+1} failed for '{pair[0][:40]}...': {e}")
+                        get_random_delay(CONFIG["retry_delay_range"])
+                        
+                        # checks if it's the last attempt
+                        if attempt == CONFIG["retry_attempts"] - 1:
+                            translation = f"[TRANSLATION FAILED] - {pair[0]}"
+                            error_count += 1
+                            
+
+
                 results.append({    
                     f"{SL}": pair[0],
                     f"{TL}": translation,
@@ -83,6 +100,7 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
 
             except Exception as e:
                 logger.error(f"Batch {batch_idx + 1} | Unexpected error: {e}")
+                error_count += 1
                 results.append({f"{SL}": pair[0], f"{TL}": "[ERROR]", f"{OL}": pair[1]})
             finally:
                 # Random delay between requests
@@ -112,8 +130,8 @@ def main():
     print(sl_sentences[0])
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
     # Optional: test with subset
-    # sl_sentences = sl_sentences[:50]
-    # ol_sentences = ol_sentences[:50]
+    sl_sentences = sl_sentences[:40]
+    ol_sentences = ol_sentences[:40]
     
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)
@@ -146,8 +164,8 @@ def main():
             # Random delay between batches
             if completed < len(batches):
                 logger.info(f"{completed}/{len(batches)} Sleeping before next batch...")          
-                
-                get_random_delay(*CONFIG["new_batch_delay_range"], fatigue=1 + (completed / len(batches)) * 3)         
+
+                get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (completed / len(batches)) * 3)
 
     # Save CSV
     csv_file = f"{OUTPUT_FOLDER}/{SL}_{TL}_{OL}_parallel.csv"

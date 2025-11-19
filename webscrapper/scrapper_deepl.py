@@ -103,7 +103,7 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int) -> str:
                 
                 # Occasionally interact lightly (20% chance)
                 if random.random() < 0.2:
-                    simulate_human(page, UNSAFE_CLICK_SELECTORS, max_scroll_iterations=3)
+                    simulate_human(page, UNSAFE_CLICK_SELECTORS)
 
                 return translated_text
 
