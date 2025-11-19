@@ -1,11 +1,6 @@
 /.venv
 __pycache__/
 logs/
-bible_abk.txt
-bible_bcnda.txt
-bible_cpdv.txt
-bible_koad21.txt
-bible_niv.txts
-parallel_corpus.json
-fr_en_br_parallel.csv
-fr_en_br_parallel.json
+
+output/*
+!output/README.md

@@ -16,7 +16,7 @@ CONFIG = {
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   
     "max_scroll_iterations": 30,     # Prevent infinite scroll loops
-    "max_workers": 7,                    # Concurrent translation workers
+    "max_workers": 2,                    # Concurrent translation workers
     "batch_size": 15,                    # Sentences per context (proxy switch)    
     "proxy_rotation": False,    
     
@@ -29,6 +29,6 @@ CONFIG = {
     
     
     # translator_maitre.py specific   
-    "button_click_probability": 0.2,  # Probability of clicking a button
+    "button_click_probability": 0.25,  # Probability of clicking a button
     "button_delay_range": (1, 4), # Delay range for interactions
 }

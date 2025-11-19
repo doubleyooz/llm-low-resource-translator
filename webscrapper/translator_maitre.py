@@ -2,30 +2,32 @@ import csv
 import json
 import logging
 import random
-import requests
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Tuple, Optional
 
 import pandas as pd
 from playwright.sync_api import sync_playwright, Page, BrowserContext
-from config import CONFIG
-from user_agents import USER_AGENTS
+from scrapper_config import CONFIG
+from scrapper_google_translate import get_url, translate_sentence
+from pw_proxies import get_proxy
+from pw_user_agents import USER_AGENTS
+from pw_user_sim import get_random_delay, perform_action
 
 '''
 Translator for French to English using Google Translate via Playwright.
 Translates sentences from a Parquet dataset and saves results in CSV and JSON formats.
 '''
 
+OUTPUT_FOLDER = "output"
 
 # Language codes
 SL = "fr"   # Source language (French)
 TL = "en"   # Target language (English)
 OL = "br"   # Original language (Breton)
 
-# -------------------------------
+
 # Logging
-# -------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -33,196 +35,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-SAFE_CLICK_SELECTORS = [
-    "button[aria-label='Listen to source text']",
-    "button[aria-label='Listen to translation']",
-    "button[aria-label='Copy translation']",
-    "button[aria-label='Rate this translation']",
-    "button[aria-label='Share translation']",
-    "button[aria-label='Settings']",
-]
-
-UNSAFE_CLICK_SELECTORS = [
-    "button[aria-label='Clear source text']",
-    "button[aria-label='Swap languages (Ctrl+Shift+S)']",
-]
-
-# AUTO-REFRESH PROXIES (always fresh!)
-# -------------------------------
-def load_fresh_proxies() -> List[Dict]:
-    """Fetches fresh elite/anonymous HTTP proxies from ProxyScrape"""
-    if CONFIG["proxy_rotation"] is False:
-        return []
-    url = (
-        "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc"
-    )
-    try:
-        resp = requests.get(url, timeout=15)
-        resp.raise_for_status()     
-        proxies = []
-        for line in resp.text.strip().splitlines():
-            if line.strip():
-                ip_port = line.strip()
-                proxies.append({"server": f"http://{ip_port}"})
-        logging.info(f"Loaded {len(proxies)} fresh proxies")
-        return proxies
-    except Exception as e:
-        logging.error(f"Failed to load proxies: {e}. Running without proxies.")
-        return []
-
-# Load proxies once at startup
-PROXIES = load_fresh_proxies()
-
-# -------------------------------
-# Helpers
-# -------------------------------
-def get_random_delay(delay_range: Tuple[float, float], fatigue: float = 1) -> None:
-    if fatigue < 1:
-        fatigue = 1
-    delay = random.uniform(*delay_range) * fatigue
-    time.sleep(delay)
-    if fatigue > 1:
-        logger.info(f"Sleeping {delay:.1f}s (fatigue mode)") 
-
-def perform_action(action: callable, name: str, delay_range=None):
-    delay_range = delay_range or CONFIG["interaction_delay_range"]
-    try:
-        action()
-        get_random_delay(delay_range)
-    except Exception as e:
-        logger.warning(f"[{name}] failed: {e}")
-
-def simulate_human(page: Page, selectors: list[str] = SAFE_CLICK_SELECTORS, max_scroll_iterations: int = CONFIG["max_scroll_iterations"]) -> None:
-    # Light human simulation: scroll + mouse move.
-    try:
-        height = page.evaluate("document.body.scrollHeight")
-        target = height * 0.6
-        pos = 0
-        it = 0
-        while pos < target and it < max_scroll_iterations:
-            delta = random.randint(*CONFIG["scroll_amount_range"])
-            if random.random() < CONFIG["scroll_back_probability"]:
-                delta = -delta
-            page.evaluate(f"window.scrollBy(0, {delta})")
-            pos += abs(delta)
-            it += 1
-
-            perform_action(
-                lambda: page.mouse.move(
-                    random.randint(*CONFIG["mouse_move_range_x"]),
-                    random.randint(*CONFIG["mouse_move_range_y"])
-                ),
-                "mouse move",
-                CONFIG["scroll_delay_range"]
-            )
-     
-        # Random mouse wandering (very important for anti-bot)
-        if(random.random() < CONFIG["button_click_probability"] / 2):
-            for _ in range(random.randint(*CONFIG["button_delay_range"])):
-                perform_action(
-                    lambda: page.mouse.move(
-                        random.randint(*CONFIG["mouse_move_range_x"]),
-                        random.randint(*CONFIG["mouse_move_range_y"]),
-                        steps=random.randint(15, 30)
-                    ),
-                    "mouse wander"
-                )
-             
-        # Randomly decide whether to click (20% chance per page visit)
-        if random.random() < CONFIG["button_click_probability"]:
-            logger.debug("Simulating random button click...")
-            # Filter only visible & enabled buttons
-            clickable = []
-            for sel in selectors:
-                try:
-                    el = page.locator(sel).first
-                    if el.is_visible() and el.is_enabled():
-                        clickable.append(el)
-                except:
-                    continue
-            if clickable:
-                target_button = random.choice(clickable)
-                
-                # Critical: hover before click (humans always hover)
-                try:
-                    box = target_button.bounding_box()
-                    if box:
-                        perform_action(        
-                            lambda: page.mouse.move(
-                                box["x"] + box["width"] / 2 + random.randint(-10, 10),
-                                box["y"] + box["height"] / 2 + random.randint(-10, 10),
-                                steps=random.randint(12, 22)
-                            ),
-                            "hover before click",
-                            CONFIG["scroll_delay_range"]
-                        )
-                    
-                except:
-                    pass
-                
-                perform_action(
-                    lambda: target_button.click(delay=random.uniform(**CONFIG["button_delay_range"])),
-                    f"click random button: {target_button.get_attribute('aria-label') or 'unknown'}",
-                    CONFIG["button_delay_range"]
-                )
-                logger.debug(f"Clicked random UI: {target_button.get_attribute('aria-label')}")
-               
-              
-    except Exception as e:
-        logger.debug(f"Human sim failed: {e}")
-    finally:
-        # Small pause after interaction
-        get_random_delay(CONFIG["interaction_delay_range"])
-
-def get_proxy(batch_idx: int) -> Optional[Dict]:
-    if not CONFIG["proxy_rotation"] or not PROXIES:
-        return None
-    return PROXIES[batch_idx % len(PROXIES)]
-
-# -------------------------------
-# Translation Core
-# -------------------------------
-def translate_sentence(page: Page, sentence: str, batch_idx: int) -> str:
-    """Translate one sentence using Google Translate."""
-    encoded = sentence.replace(" ", "%20")
-    url = f"https://translate.google.com/?sl={SL}&tl={TL}&text={encoded}&op=translate"
-
-    for attempt in range(CONFIG["retry_attempts"]):
-        try:
-            perform_action(lambda: page.goto(url, timeout=CONFIG["page_timeout_ms"]), "goto")
-            perform_action(lambda: page.wait_for_selector("span[jsname='W297wb']", timeout=20000), "wait result")
-
-            # Optional: light scroll to trigger lazy load
-            logger.debug(f"Batch {batch_idx} | Simulating human behavior...")
-            simulate_human(page)
-
-            result = page.locator("span[jsname='W297wb']").first
-            text = result.inner_text().strip()
-
-            if text and text != sentence:
-                logger.debug(f"Translated: {sentence[:30]}... → {text[:30]}...")
-                if random.random() < 0.2:
-                    simulate_human(page, UNSAFE_CLICK_SELECTORS, max_scroll_iterations=5)
-                return text
-            else:
-                if (attempt < CONFIG["retry_attempts"] / 2):
-                    raise ValueError("Empty or same-as-input translation")
-                
-                return text + "- [Empty or same-as-input translation]"
-
-        except Exception as e:
-            logger.warning(f"Attempt {attempt+1} failed for '{sentence[:40]}...': {e}")
-            get_random_delay(CONFIG["retry_delay_range"])
-            
-            # checks if it's the last attempt
-            if attempt == CONFIG["retry_attempts"] - 1:
-                return "[TRANSLATION FAILED]"
-
-    return "[TRANSLATION FAILED]"
-
-# -------------------------------
 # Worker: Process One Batch
-# -------------------------------
 def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -> List[Dict]:
     results = []
     proxy = get_proxy(batch_idx)
@@ -256,10 +69,11 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
         page = context.new_page()
 
         logger.info(f"Batch {batch_idx + 1} | Proxy: {proxy['server'] if proxy else 'None'} | {len(sentence_pairs)} sentences")
-
+        perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), "goto")
+        
         for i, pair in enumerate(sentence_pairs):
             try:
-                logger.info(f"Batch {batch_idx + 1} | Translating {i}/{len(sentence_pairs)}: {pair[0][:50]}...")
+                logger.info(f"Batch {batch_idx + 1} | Translating {i + 1}/{len(sentence_pairs)}: {pair[0][:50]}...")
                 translation = translate_sentence(page, pair[0], batch_idx + 1)
                 results.append({    
                     f"{SL}": pair[0],
@@ -268,7 +82,7 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
                 })
 
             except Exception as e:
-                logger.error(f"Unexpected error: {e}")
+                logger.error(f"Batch {batch_idx + 1} | Unexpected error: {e}")
                 results.append({f"{SL}": pair[0], f"{TL}": "[ERROR]", f"{OL}": pair[1]})
             finally:
                 # Random delay between requests
@@ -278,9 +92,6 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
 
     return results
 
-# -------------------------------
-# Main
-# -------------------------------
 def main():
     # Load dataset
     try:
@@ -297,7 +108,7 @@ def main():
     if not sl_sentences:
         logger.error(f"No {SL.upper()} sentences found.")
         return
-    logger.info(f"${SL.upper()} sentences length: {len(sl_sentences)}")
+    logger.info(f"{SL.upper()} sentences length: {len(sl_sentences)}")
     print(sl_sentences[0])
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
     # Optional: test with subset
@@ -336,20 +147,17 @@ def main():
             if completed < len(batches):
                 logger.info(f"{completed}/{len(batches)} Sleeping before next batch...")          
                 
-                get_random_delay(*CONFIG["new_batch_delay_range"], fatigue=1 + (completed / len(batches)) * 3)
-           
-            
-          
+                get_random_delay(*CONFIG["new_batch_delay_range"], fatigue=1 + (completed / len(batches)) * 3)         
 
     # Save CSV
-    csv_file = f"{SL}_{TL}_{OL}_parallel.csv"
+    csv_file = f"{OUTPUT_FOLDER}/{SL}_{TL}_{OL}_parallel.csv"
     with open(csv_file, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=[SL, TL, OL])
         writer.writeheader()
         writer.writerows(all_results)
 
     # Save JSON
-    json_file = f"{SL}_{TL}_{OL}_parallel.json"
+    json_file = f"{OUTPUT_FOLDER}/{SL}_{TL}_{OL}_parallel.json"
     with open(json_file, "w", encoding="utf-8") as f:
         json.dump(all_results, f, ensure_ascii=False, indent=2)
 
