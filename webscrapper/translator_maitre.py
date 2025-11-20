@@ -64,25 +64,26 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
         )
 
         page = context.new_page()
-
-        logger.info(f"Batch {batch_idx + 1} | Proxy: {proxy['server'] if proxy else 'None'} | {len(sentence_pairs)} sentences")
+        current_batch = batch_idx + 1
+        batch_msg = f"Batch {current_batch}"
+        logger.info(f"{batch_msg} | Proxy: {proxy['server'] if proxy else 'None'} | {len(sentence_pairs)} sentences")
         perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), "goto")
         error_count = 0
         for i, pair in enumerate(sentence_pairs):
             try:
                 if error_count >= 5:
-                    logger.error(f"Batch {batch_idx + 1} | Too many errors, adding pause.")
-                    get_random_delay(CONFIG["new_request_delay_range"], fatigue=2)
+                    logger.error(f"{batch_msg} | Too many errors, adding pause.")
+                    get_random_delay(CONFIG["new_request_delay_range"], fatigue=2, msg=f"{batch_msg}: Cooling down after errors")
                     error_count = 0
                     
-                logger.info(f"Batch {batch_idx + 1} | Translating {i + 1}/{len(sentence_pairs)}: {pair[0][:50]}...")
+                logger.info(f"{batch_msg} | Translating {i + 1}/{len(sentence_pairs)}: {pair[0][:50]}...")
                 
                 for attempt in range(CONFIG["retry_attempts"]):
                     try:
-                        translation = translate_sentence(page=page, sentence=pair[0], batch_idx=batch_idx + 1, logger=logger)
+                        translation = translate_sentence(page=page, sentence=pair[0], batch_idx=current_batch, logger=logger)
                         break
                     except Exception as e:
-                        logger.warning(f"Batch {batch_idx + 1} | Attempt {attempt+1} failed for '{pair[0][:40]}...': {e}")
+                        logger.warning(f"{batch_msg} | Attempt {attempt+1} failed for '{pair[0][:40]}...': {e}")
                         get_random_delay(CONFIG["retry_delay_range"])
                         
                         # checks if it's the last attempt
@@ -99,12 +100,19 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
                 })
 
             except Exception as e:
-                logger.error(f"Batch {batch_idx + 1} | Unexpected error: {e}")
+                logger.error(f"{batch_msg} | Unexpected error: {e}")
                 error_count += 1
                 results.append({f"{SL}": pair[0], f"{TL}": "[ERROR]", f"{OL}": pair[1]})
             finally:
                 # Random delay between requests
                 get_random_delay(CONFIG["new_request_delay_range"])
+        
+        # Random delay between batches
+
+        logger.info(f"{batch_msg} | Sleeping before next batch...")          
+
+        get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (batch_idx / (CONFIG['batch_size'] * CONFIG['max_workers'])) * 3)
+        logger.info(f"{batch_msg} | Next batch is ready to start...")           
         context.close()
         browser.close()
 
@@ -116,6 +124,8 @@ def main():
         df = pd.read_parquet("hf://datasets/Bretagne/UD_Breton-KEB_translation/data/train-00000-of-00001.parquet")
         logger.info(df.info())
         logger.info(df.head(2))
+        df = df.sample(frac=1, random_state=random.randint(1, 43)).reset_index(drop=True)
+
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
         return
@@ -129,9 +139,10 @@ def main():
     logger.info(f"{SL.upper()} sentences length: {len(sl_sentences)}")
     print(sl_sentences[0])
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
+    
     # Optional: test with subset
-    sl_sentences = sl_sentences[:40]
-    ol_sentences = ol_sentences[:40]
+    # sl_sentences = sl_sentences[:40]
+    # ol_sentences = ol_sentences[:40]
     
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)
@@ -160,13 +171,8 @@ def main():
                 logger.info(f"Batch {completed}/{len(batches)} completed.")
             except Exception as e:
                 logger.error(f"Batch {completed} failed: {e}")
-                
-            # Random delay between batches
-            if completed < len(batches):
-                logger.info(f"{completed}/{len(batches)} Sleeping before next batch...")          
-
-                get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (completed / len(batches)) * 3)
-
+            
+            
     # Save CSV
     csv_file = f"{OUTPUT_FOLDER}/{SL}_{TL}_{OL}_parallel.csv"
     with open(csv_file, "w", encoding="utf-8", newline="") as f:

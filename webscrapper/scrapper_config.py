@@ -16,7 +16,7 @@ CONFIG = {
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   
     "max_scroll_iterations": 100,     # Prevent infinite scroll loops
-    "max_workers": 4,                    # Concurrent translation workers
+    "max_workers": 2,                    # Concurrent translation workers
     "batch_size": 8,                    # Sentences per context (proxy switch)    
     "proxy_rotation": False,    
     
