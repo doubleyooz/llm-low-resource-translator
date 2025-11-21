@@ -101,7 +101,7 @@ def _click_element(element: Locator) -> bool:
             return False
 
 
-def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int = 1, button_click_probability: float = CONFIG["button_click_probability"]) -> None:
+def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int = 1, button_click_probability: float = CONFIG["button_click_probability"], msg: str = "") -> None:
     # Light human simulation: scroll + mouse move.
     try:
         _simulate_scrolling(page)
@@ -121,7 +121,7 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
                 
             # Randomly decide whether to click (20% chance per page visit)
             if random.random() < button_click_probability:
-                logger.debug("Simulating random button click...")
+                logger.debug(f"{msg} | Simulating random button click...")
                 # Filter only visible & enabled buttons
                 clickable = []
                 for sel in selectors:

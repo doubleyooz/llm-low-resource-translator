@@ -2,6 +2,7 @@
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from constants.languages import SL, TL
@@ -21,7 +22,7 @@ class SingletonLogger:
             self.logger: Optional[logging.Logger] = None
             self._initialized = True
 
-    def setup_logger(self, output_folder: str = OUTPUT_FOLDER, source_lang: str = SL, target_lang: str = TL, level= logging.INFO) -> logging.Logger:
+    def setup_logger(self, output_folder: str = None, source_lang: str = SL, target_lang: str = TL, level= logging.INFO) -> logging.Logger:
         """
         Setup the logger with file and console handlers.
         
@@ -35,6 +36,13 @@ class SingletonLogger:
         """
         if self.logger is not None:
             return self.logger
+
+        # If no output folder specified, use current script directory
+        if output_folder is None:
+            script_dir = Path(__file__).parent
+            output_folder = script_dir / "output"
+        else:
+            output_folder = Path(output_folder)
 
         # Ensure output folder exists
         os.makedirs(output_folder, exist_ok=True)

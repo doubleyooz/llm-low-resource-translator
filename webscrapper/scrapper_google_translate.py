@@ -46,44 +46,50 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
     set_input(page, sentence, batch_idx)
    
     initial_query_params = get_current_query_params(page.url)
+    batch_msg = f"Batch {batch_idx}" 
     
     # Optional: light scroll to trigger lazy load
-    logger.debug(f"Batch {batch_idx} | Simulating human behavior...")
-    simulate_human(page)
+    logger.debug(f"{batch_msg} | Simulating human behavior...")
+    simulate_human(page=page, msg=batch_msg)
     
     result = page.locator("span[jsname='W297wb']").first
     output = result.inner_text().strip()
 
     if output and output != sentence:
-        logger.debug(f"Batch {batch_idx} | Translated: {sentence[:30]}... → {output[:30]}...")
+        logger.debug(f"{batch_msg} | Translated: {sentence[:30]}... → {output[:30]}...")
         stealthInteractionRoutine(page, logger, batch_idx, initial_query_params)
         return output
     else:
         logger.info(initial_query_params)
-        logger.info(f"Batch {batch_idx} | {SL} -> {TL}")
+        logger.info(f"{batch_msg} | {SL} -> {TL}")
         if initial_query_params['sl'] == SL and initial_query_params['tl'] == TL:
             _click_element(page.locator(DOUBLE_CLICK_SELECTORS[0]))
             text = result.inner_text().strip()
 
-            logger.warning(f"Batch {batch_idx} | Translated back from {TL}: {sentence[:50]}...")
+            logger.warning(f"{batch_msg} | Translated back from {TL}: {sentence[:50]}...")
             stealthInteractionRoutine(page, logger, batch_idx, initial_query_params)
             return f"[TRANSLATION BACK FROM {TL}] - {sentence}"
-        raise ValueError(f"Batch {batch_idx} | Empty or same-as-input translation")
+        raise ValueError(f"{batch_msg} | Empty or same-as-input translation")
 
-def _reset_languages(page: Page, sl: str, tl: str):
-    if type(sl) is list:
-        sl = sl[0]
-    if type(tl) is list:
-        tl = tl[0]
-        
-    _click_element(page.locator(DOUBLE_CLICK_SELECTORS[1],).first)
-    _click_element(page.locator(f'xpath=//div[@data-language-code="{sl}" and .//span[contains(text(), "recently used language")]]').first)
-    _click_element(page.locator(DOUBLE_CLICK_SELECTORS[1],).first)
-    _click_element(page.locator(DOUBLE_CLICK_SELECTORS[2],).first)
-    _click_element(page.locator(f'xpath=//div[@data-language-code="{tl}" and .//span[contains(text(), "recently used language")]]').first)
-    _click_element(page.locator(DOUBLE_CLICK_SELECTORS[2],).first)
+def _click_language_option(page: Page, language_code: str):
+    """Helper function to click language option with fallback"""
+    recent_lang_locator = page.locator(f'xpath=//div[@data-language-code="{language_code}" and .//span[contains(text(), "recently used language")]]')
+    if recent_lang_locator.count() > 0:
+        _click_element(recent_lang_locator.first)
+    else:
+        _click_element(page.locator(f'div[data-language-code="{language_code}"]').first)
+
+def _reset_languages(page: Page, language: str, is_source_language: bool = True) -> Dict[str, Any]:
+    if type(language) is list:
+        language = language[0]
+           
+    selector = DOUBLE_CLICK_SELECTORS[1] if is_source_language else DOUBLE_CLICK_SELECTORS[2]
+   
+    _click_element(page.locator(selector).first)
+    _click_language_option(page, language)
+    _click_element(page.locator(selector).first)
+    
     return get_current_query_params(page.url)
-            
             
 def set_input(page: Page, sentence: str, batch_idx: int):
     perform_action(lambda: page.wait_for_selector(INPUT_TEXTAREA_SELECTOR, timeout=20000), f"Batch {batch_idx} | wait result")
@@ -104,18 +110,19 @@ def set_input(page: Page, sentence: str, batch_idx: int):
     
   
 def stealthInteractionRoutine(page: Page, logger: logging.Logger, batch_idx: int, initial_query_params):
+    batch_msg = f"Batch {batch_idx}"
     # light scroll to trigger lazy load
     if random.random() < 0.2:
-        simulate_human(page, DOUBLE_CLICK_SELECTORS, number_of_clicks=2, button_click_probability=1)
-        simulate_human(page, UNSAFE_CLICK_SELECTORS)
+        simulate_human(page=page, selectors=DOUBLE_CLICK_SELECTORS, number_of_clicks=2, button_click_probability=1, msg=batch_msg)
+        simulate_human(page=page, selectors=UNSAFE_CLICK_SELECTORS, msg=batch_msg)
     final_query_params = get_current_query_params(page.url)
         
     while initial_query_params["sl"] != final_query_params['sl']:
-        logger.warning(f"Batch {batch_idx} | URL sl value changed during translation: {initial_query_params['sl']} → {final_query_params['sl']}")
-        final_query_params = _reset_languages(page, initial_query_params["sl"], final_query_params['tl'])
+        logger.warning(f"{batch_msg} | URL sl value changed during translation: {initial_query_params['sl']} → {final_query_params['sl']}")
+        final_query_params = _reset_languages(page, initial_query_params["sl"], is_source_language=True)
     while initial_query_params["tl"] != final_query_params['tl']:
-        logger.warning(f"Batch {batch_idx} | URL tl value changed during translation: {initial_query_params['tl']} → {final_query_params['tl']}")
-        final_query_params = _reset_languages(page, initial_query_params["sl"], final_query_params['tl'])
+        logger.warning(f"{batch_msg} | URL tl value changed during translation: {initial_query_params['tl']} → {final_query_params['tl']}")
+        final_query_params = _reset_languages(page, initial_query_params["tl"], is_source_language=False)
     
 def get_current_query_params(url: str) -> Dict[str, Any]:
     return parse_qs(urlparse(url).query)

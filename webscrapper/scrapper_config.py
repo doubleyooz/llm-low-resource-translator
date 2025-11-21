@@ -17,7 +17,7 @@ CONFIG = {
   
     "max_scroll_iterations": 100,     # Prevent infinite scroll loops
     "max_workers": 2,                    # Concurrent translation workers
-    "batch_size": 8,                    # Sentences per context (proxy switch)    
+    "batch_size": 16,                    # Sentences per context (proxy switch)    
     "proxy_rotation": False,    
     
     # get_bible_versions.py specific
@@ -29,6 +29,6 @@ CONFIG = {
     
     
     # translator_maitre.py specific   
-    "button_click_probability": 0.2,  # Probability of clicking a button
+    "button_click_probability": 0.5,  # Probability of clicking a button
     "button_delay_range": (1, 4), # Delay range for interactions
 }
