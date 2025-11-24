@@ -67,7 +67,7 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
         current_batch = batch_idx + 1
         batch_msg = f"Batch {current_batch}"
         logger.info(f"{batch_msg} | Proxy: {proxy['server'] if proxy else 'None'} | {len(sentence_pairs)} sentences")
-        perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), "goto")
+        perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), f"{batch_msg} | goto")
         error_count = 0
         for i, pair in enumerate(sentence_pairs):
             try:
