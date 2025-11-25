@@ -59,14 +59,13 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
         
         while (abs(current_scroll - target_scroll) > 100 and iterations < max_iterations):
             
-            
             # Calculate remaining distance
             remaining = target_scroll - current_scroll
             
             # Determine scroll amount (don't overshoot)
             scroll_pixel_range = CONFIG.get("scroll_pixel_range", (100, 300))
             scroll_amount = random.randint(*scroll_pixel_range)
-           
+            logger.debug(f"{msg} | Remaining scroll: {remaining:.0f}px, initial scroll amount: {scroll_amount}px")
             # If we're close to target, reduce scroll amount
             if abs(remaining) < scroll_amount:
                 scroll_amount = int(abs(remaining) * 0.8) * (1 if remaining > 0 else -1)
@@ -74,18 +73,20 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
                 scroll_amount = scroll_amount if remaining > 0 else -scroll_amount
            
             # Occasionally scroll back up
-            if (random.random() < CONFIG["scroll_back_probability"] and 
-                current_scroll > scroll_amount):
+            if ((random.random() < CONFIG["scroll_back_probability"] and 
+                current_scroll > scroll_amount) or current_scroll > target_scroll):
                 scroll_amount = -scroll_amount
             
             perform_action(
                     lambda: page.evaluate(f"window.scrollBy(0, {scroll_amount})"),
-                    f"{msg} | scrolling by {scroll_amount}px",
+                    f"{msg} | scrolling by {scroll_amount}px. {current_scroll:.0f}px → {target_scroll:.0f}px",
                     CONFIG["scroll_delay_range"]
                 )
         
           
             current_scroll = max(0, page.evaluate("window.pageYOffset"))
+            if current_scroll < 1 and scroll_amount > current_scroll:
+                current_scroll = scroll_amount
             iterations += 1
             
             logger.debug(f"{msg} | Scroll iteration {iterations}: {current_scroll:.0f}px")
@@ -109,9 +110,17 @@ def _random_mouse_movement(page: Page, msg: str = "") -> None:
     )
     
 
-def _click_element(element: Locator, msg: str = "", hover: bool = False) -> bool:
+def _click_element(element: Locator, msg: str = "", hover: bool = False, raise_exception: bool = False) -> bool:
         """Click an element with realistic delay."""
         try:
+            if isinstance(element, list):
+                if len(element) == 0:
+                    logger.warning(f"{msg} | Empty element list provided")
+                    raise ValueError("Empty element list")
+                element = element[0]  # Use first element from list
+                logger.debug(f"{msg} | Using first element from list ({len(element)} elements total)")
+
+                
             element_description = (
                 element.get_attribute('aria-label') or 
                 element.get_attribute('title') or 
@@ -122,16 +131,20 @@ def _click_element(element: Locator, msg: str = "", hover: bool = False) -> bool
                 perform_action(
                     lambda: element.hover(),
                     f"{msg} | hover: {element_description}",
-                    CONFIG["scroll_delay_range"]
+                    CONFIG["scroll_delay_range"],
+                    raise_exception
                 )
             
             return perform_action(
                 lambda: element.click(delay=random.uniform(100, 300)),
                 f"{msg} | click: {element_description}",
-                CONFIG["button_delay_range"]
+                CONFIG["button_delay_range"],
+                raise_exception
             )
         except Exception as e:
             logger.warning(f"{msg} | Click failed: {e}")
+            if raise_exception:
+                raise e
             return False
 
 
@@ -156,7 +169,7 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
                     )
                 
             # Randomly decide whether to click (20% chance per page visit)
-            if random.random() < button_click_probability:
+            if random.random() <= button_click_probability:
                 logger.debug(f"{msg} | Simulating random button click...")
                 # Filter only visible & enabled buttons
                 clickable = []

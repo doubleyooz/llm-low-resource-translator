@@ -15,9 +15,9 @@ CONFIG = {
     "mouse_move_range_x": (-300, 800),  # X-coordinate range for mouse movement
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   
-    "max_scroll_iterations": 80,     # Prevent infinite scroll loops
-    "max_workers": 3,                    # Concurrent translation workers
-    "batch_size": 16,                    # Sentences per context (proxy switch)    
+    "max_scroll_iterations": 40,     # Prevent infinite scroll loops
+    "max_workers": 4,                    # Concurrent translation workers
+    "batch_size": 12,                    # Sentences per context (proxy switch)    
     "proxy_rotation": False,    
     
     # get_bible_versions.py specific
