@@ -82,7 +82,12 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
         logger.info(f"{batch_msg} | {SL} -> {TL}")
         if initial_query_params.get('sl')[0] == SL and initial_query_params.get('tl')[0] == TL:
             logger.warning(f"{batch_msg} | Clicking on swap languages for backtranslation...")
-            _click_element(page.locator(DOUBLE_CLICK_SELECTORS[0]).first, msg=batch_msg)
+            try:                
+                _click_element(page.locator(DOUBLE_CLICK_SELECTORS[0]).first, msg=batch_msg)
+            except Exception as e:
+                _click_element(page.locator(DOUBLE_CLICK_SELECTORS[0].replace("Cmd", "Ctrl")).first, msg=batch_msg)
+                logger.error(f"{batch_msg} | Failed to click swap languages button.")
+                raise e
             output = result.inner_text().strip()
 
             logger.warning(f"{batch_msg} | Translated back from {TL}: {sentence[:50]}...")
