@@ -73,6 +73,7 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
             try:
                 if error_count >= 5:
                     logger.error(f"{batch_msg} | Too many errors, adding pause.")
+                    page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Too many errors, adding pause {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                     get_random_delay(CONFIG["new_request_delay_range"], fatigue=2, msg=f"{batch_msg}: Cooling down after errors")
                     error_count = 0
                     
@@ -85,7 +86,8 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
                     except Exception as e:
                         logger.warning(f"{batch_msg} | Attempt {attempt+1} failed for '{pair[0][:40]}...': {e}")
                         get_random_delay(CONFIG["retry_delay_range"])
-                        
+                        page.reload()
+                        get_random_delay(CONFIG["retry_delay_range"])
                         # checks if it's the last attempt
                         if attempt == CONFIG["retry_attempts"] - 1:
                             translation = f"[TRANSLATION FAILED] - {pair[0]}"
@@ -101,6 +103,7 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
 
             except Exception as e:
                 logger.error(f"{batch_msg} | Unexpected error: {e}")
+                page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Unexpected error: {e} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                 error_count += 1
                 results.append({f"{SL}": pair[0], f"{TL}": "[ERROR]", f"{OL}": pair[1]})
             finally:
@@ -117,6 +120,33 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
         browser.close()
 
     return results
+
+
+def save_batch_to_csv(batch_results: List[Dict], batch_idx: int):
+    """Save a single batch to CSV file"""
+    batch_csv_file = f"{translation_logger.get_filepath()}/batch_{batch_idx + 1}.csv"
+    try:
+        with open(batch_csv_file, "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=[SL, TL, OL])
+            writer.writeheader()
+            writer.writerows(batch_results)
+        logger.info(f"Batch {batch_idx + 1} saved to {batch_csv_file}")
+        return batch_csv_file
+    except Exception as e:
+        logger.error(f"Failed to save batch {batch_idx + 1} to CSV: {e}")
+        return None
+
+def save_batch_to_json(batch_results: List[Dict], batch_idx: int):
+    """Save a single batch to JSON file"""
+    batch_json_file = f"{translation_logger.get_filepath()}/batch_{batch_idx + 1}.json"
+    try:
+        with open(batch_json_file, "w", encoding="utf-8") as f:
+            json.dump(batch_results, f, ensure_ascii=False, indent=2)
+        logger.info(f"Batch {batch_idx + 1} saved to {batch_json_file}")
+        return batch_json_file
+    except Exception as e:
+        logger.error(f"Failed to save batch {batch_idx + 1} to JSON: {e}")
+        return None
 
 def main():
     # Load dataset
@@ -141,8 +171,8 @@ def main():
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
     
     # Optional: test with subset
-    # sl_sentences = sl_sentences[:40]
-    # ol_sentences = ol_sentences[:40]
+    sl_sentences = sl_sentences[:70]
+    ol_sentences = ol_sentences[:70]
     
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)
@@ -168,20 +198,26 @@ def main():
             try:
                 batch_results = future.result()
                 all_results.extend(batch_results)
+                # Save batch immediately to individual files
+                save_batch_to_csv(batch_results, batch_idx)
+                                
+                save_batch_to_json(batch_results, batch_idx)
+                
                 logger.info(f"Batch {completed}/{len(batches)} completed.")
             except Exception as e:
                 logger.error(f"Batch {completed} failed: {e}")
+                
             
             
     # Save CSV
-    csv_file = f"{OUTPUT_FOLDER}/{SL}_{TL}_{OL}_parallel.csv"
+    csv_file = f"{translation_logger.get_filepath()}/{SL}_{TL}_{OL}_parallel.csv"
     with open(csv_file, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=[SL, TL, OL])
         writer.writeheader()
         writer.writerows(all_results)
 
     # Save JSON
-    json_file = f"{OUTPUT_FOLDER}/{SL}_{TL}_{OL}_parallel.json"
+    json_file = f"{translation_logger.get_filepath()}/{SL}_{TL}_{OL}_parallel.json"
     with open(json_file, "w", encoding="utf-8") as f:
         json.dump(all_results, f, ensure_ascii=False, indent=2)
 

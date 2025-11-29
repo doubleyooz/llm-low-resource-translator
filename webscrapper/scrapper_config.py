@@ -2,12 +2,12 @@
 CONFIG = {
 
     "page_timeout_ms": 100000,  # Page load timeout
-    "scroll_delay_range": (0.1, 2), # Delay range for scrolling
-    "interaction_delay_range": (3, 9), # Delay range for interactions
+    "scroll_delay_range": (0.1, 1.1), # Delay range for scrolling
+    "interaction_delay_range": (3, 7), # Delay range for interactions
     "new_request_delay_range": (3, 13),  # Delay range between requests
-    "retry_attempts": 10,       # Retry attempts for failed requests
-    "retry_delay_range": (5, 15),  # Delay range between retries
-    "new_batch_delay_range": (80, 180),  # Delay range between batches
+    "retry_attempts": 11,       # Retry attempts for failed requests
+    "retry_delay_range": (4, 16),  # Delay range between retries
+    "new_batch_delay_range": (80, 200),  # Delay range between batches
     "scroll_amount_range": (20, 400),  # Range for scroll amount
     "scroll_back_probability": 0.2,    # Probability of scrolling backward
     
@@ -16,7 +16,7 @@ CONFIG = {
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   
     "max_scroll_iterations": 40,     # Prevent infinite scroll loops
-    "max_workers": 4,                    # Concurrent translation workers
+    "max_workers": 6,                    # Concurrent translation workers
     "batch_size": 12,                    # Sentences per context (proxy switch)    
     "proxy_rotation": False,    
     
@@ -29,6 +29,6 @@ CONFIG = {
     
     
     # translator_maitre.py specific   
-    "button_click_probability": 0.6,  # Probability of clicking a button
-    "button_delay_range": (1, 4), # Delay range for interactions
+    "button_click_probability": 0.7,  # Probability of clicking a button
+    "button_delay_range": (0.5, 2), # Delay range for interactions
 }

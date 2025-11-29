@@ -44,7 +44,7 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
         viewport_height = page.evaluate("window.innerHeight")
         max_scroll = max(0, scroll_height - viewport_height)
         
-        if max_scroll == 0:
+        if max_scroll < 100:
             logger.debug(f"{msg} | No scrollable content")
             return
         
@@ -57,18 +57,22 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
         iterations = 0
         max_iterations = CONFIG.get("max_scroll_iterations", 50)
         
+        logger.debug(f"{msg} | Entering scrolling loop")
+        
         while (abs(current_scroll - target_scroll) > 100 and iterations < max_iterations):
-            
-            # Calculate remaining distance
-            remaining = target_scroll - current_scroll
-            
+                 
             # Determine scroll amount (don't overshoot)
             scroll_pixel_range = CONFIG.get("scroll_pixel_range", (100, 300))
             scroll_amount = random.randint(*scroll_pixel_range)
+            
+          
+            # Calculate remaining distance
+            remaining = target_scroll - current_scroll
+       
             logger.debug(f"{msg} | Remaining scroll: {remaining:.0f}px, initial scroll amount: {scroll_amount}px")
             # If we're close to target, reduce scroll amount
             if abs(remaining) < scroll_amount:
-                scroll_amount = int(abs(remaining) * 0.8) * (1 if remaining > 0 else -1)
+                scroll_amount = int((abs(remaining) * 0.8) * (1 if remaining > 0 else -1))
             else:
                 scroll_amount = scroll_amount if remaining > 0 else -scroll_amount
            
@@ -82,18 +86,15 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
                     f"{msg} | scrolling by {scroll_amount}px. {current_scroll:.0f}px → {target_scroll:.0f}px",
                     CONFIG["scroll_delay_range"]
                 )
-        
-          
-            current_scroll = max(0, page.evaluate("window.pageYOffset"))
-            if current_scroll < 1 and scroll_amount > current_scroll:
-                current_scroll = scroll_amount
+            current_scroll += scroll_amount
+
             iterations += 1
             
             logger.debug(f"{msg} | Scroll iteration {iterations}: {current_scroll:.0f}px")
             
             # Random mouse movements during scrolling
             _random_mouse_movement(page, msg)
-            
+        logger.debug(f"{msg} | Finishing simulating scrolling...")        
     except Exception as e:
         logger.debug(f"{msg} Scrolling simulation failed: {e}")
 
@@ -153,12 +154,13 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
     try:
         logger.debug(f"{msg} | Simulating human behaviour...")
         _simulate_scrolling(page, msg)
-                        
+              
         for _ in range(number_of_clicks):
             
             # Random mouse wandering (very important for anti-bot)
             if(random.random() < button_click_probability / 2):
-                for _ in range(random.randint(*CONFIG["button_delay_range"])):
+                logger.debug(f"{msg} | Preparing wandering before click...")
+                for _ in range(random.randint(1,3)):
                     perform_action(
                         lambda: page.mouse.move(
                             random.randint(*CONFIG["mouse_move_range_x"]),
@@ -200,7 +202,9 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
                     except:
                         pass
                     
-                    _click_element(target_button, msg)              
+                    _click_element(target_button, msg)      
+                else:
+                    logger.debug(f"{msg} | No clickable elements found for selectors: {selectors}")        
 
               
     except Exception as e:

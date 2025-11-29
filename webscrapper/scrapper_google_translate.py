@@ -47,21 +47,24 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
     """Translate one sentence using Google Translate."""
     batch_msg = f"Batch {batch_idx}" 
     
-    set_input(page, sentence, msg=batch_msg, logger=logger)
-   
+
     initial_query_params = get_current_query_params(page.url)
  
     # Optional: light scroll to trigger lazy load
     simulate_human(page=page, msg=batch_msg)
     
  
-    if initial_query_params.get('sl')[0] != SL:
-        logger.debug(f"{batch_msg} | Source language mismatch: {initial_query_params.get('sl')[0]} → {SL}. Resetting...")
-        initial_query_params = _reset_languages(page=page, language=initial_query_params.get("sl")[0], is_source_language=True, batch_msg=batch_msg)
-    if initial_query_params.get('tl')[0] != TL:
-        logger.debug(f"{batch_msg} | Target language mismatch: {initial_query_params.get('tl')[0]} → {TL}. Resetting...")
-        initial_query_params = _reset_languages(page=page, language=initial_query_params.get("tl")[0], is_source_language=False, batch_msg=batch_msg)
+    ensure_language_parameters_stability(page=page,
+        initial_sl=initial_query_params.get('sl'),
+        initial_tl=initial_query_params.get('tl'),
+        final_sl=SL,
+        final_tl=TL,
+        batch_msg=batch_msg,
+        _logger=logger
+    )
     
+    set_input(page, sentence, msg=batch_msg, logger=logger)
+   
     logger.debug(f"{batch_msg} | Translating: [{initial_query_params.get('sl')[0]} → {initial_query_params.get('tl')[0]}] {sentence[:30]}...")
     
     result = page.locator("span[jsname='W297wb']").first
@@ -75,7 +78,7 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
     
     if output != sentence:
         logger.debug(f"{batch_msg} | Translated: {sentence[:30]}... → {output[:30]}...")
-        stealthInteractionRoutine(page, batch_idx, initial_query_params)
+        stealthInteractionRoutine(page, batch_idx)
         return output
     else:
         logger.info(initial_query_params)
@@ -87,11 +90,12 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
             except Exception as e:
                 _click_element(page.locator(DOUBLE_CLICK_SELECTORS[0].replace("Cmd", "Ctrl")).first, msg=batch_msg)
                 logger.error(f"{batch_msg} | Failed to click swap languages button.")
+                page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Failed to click swap languages button {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                 raise e
             output = result.inner_text().strip()
 
             logger.warning(f"{batch_msg} | Translated back from {TL}: {sentence[:50]}...")
-            stealthInteractionRoutine(page, batch_idx, initial_query_params)
+            stealthInteractionRoutine(page, batch_idx)
             return f"[TRANSLATION BACK FROM {TL}] - {output}"
         raise ValueError(f"{batch_msg} | Can't perform backtranslation [{SL}] -> [{TL}] for sentence: {sentence[:50]}...")
 
@@ -155,9 +159,10 @@ def _click_language_option(page: Page, language_code: str, _language_list: Locat
     
     except Exception as e:
         _logger.error(f"{batch_msg} | Language selection failed for {language_code}: {e}")
-        
+        page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Language selection failed for {language_code} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
         # Last resort attempt
         _logger.error(f"{batch_msg} | Complete failure for {language_code}")
+        page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Complete failure for {language_code} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
         raise 
 
 def _reset_languages(page: Page, language: str, is_source_language: bool = True, batch_msg: str = '') -> Dict[str, Any]:
@@ -199,30 +204,65 @@ def set_input(page: Page, sentence: str, msg: str = '', logger: logging.Logger =
         raise ValueError(f"{msg} | Failed to set input text after {attempts} attempts.")
     
   
-def stealthInteractionRoutine(page: Page, batch_idx: int, initial_query_params: Dict[str, Any]) -> None:
+def stealthInteractionRoutine(page: Page, batch_idx: int) -> None:
     batch_msg = f"Batch {batch_idx}"
     _logger = translation_logger.get_logger()
     # light scroll to trigger lazy load
-    #if random.random() < 0.5:
-    #    simulate_human(page=page, selectors=SAFE_CLICK_SELECTORS, msg=batch_msg)
+    if random.random() < 0.04:
+        simulate_human(page=page, selectors=SAFE_CLICK_SELECTORS, msg=batch_msg)
         
-    if random.random() < 0.7:
-            _logger.warning(f"{batch_msg} | Using unsafe selectors...")
+    if random.random() < 0.5:          
             simulate_human(page=page, selectors=DOUBLE_CLICK_SELECTORS, number_of_clicks=2, button_click_probability=1, msg=batch_msg)
+            _logger.warning(f"{batch_msg} | Finished using unsafe selectors...")
+    elif random.random() < 0.9:
+            _logger.warning(f"{batch_msg} | Using unsafe selectors...")
             simulate_human(page=page, selectors=UNSAFE_CLICK_SELECTORS, msg=batch_msg)
             _logger.warning(f"{batch_msg} | Finished using unsafe selectors...")
     final_query_params = get_current_query_params(page.url)
         
-    while initial_query_params.get('sl')[0] != final_query_params.get('sl')[0]:
-        _logger.warning(f"{batch_msg} | URL sl value changed during translation: {initial_query_params.get('sl')} → {final_query_params.get('sl')}")
-        final_query_params = _reset_languages(page= page, language=initial_query_params.get("sl")[0], is_source_language=True, batch_msg=batch_msg)
-    while initial_query_params.get("tl")[0] != final_query_params.get('tl')[0]:
-        _logger.warning(f"{batch_msg} | URL tl value changed during translation: {initial_query_params.get('tl')} → {final_query_params.get('tl')}")
-        final_query_params = _reset_languages(page=page, language=initial_query_params.get("tl"), is_source_language=False, batch_msg=batch_msg)
-    
+    ensure_language_parameters_stability(
+        page=page,
+        initial_sl=final_query_params.get('sl'),
+        initial_tl=final_query_params.get('tl'),
+        final_sl=SL,
+        final_tl=TL,
+        batch_msg=batch_msg,
+        _logger=_logger
+    )
+
 def get_current_query_params(url: str) -> Dict[str, Any]:
     return parse_qs(urlparse(url).query)
 
+def ensure_language_parameters_stability(
+    page: Page,
+    initial_sl: str,
+    initial_tl: str,
+    final_sl: str,
+    final_tl: str,  
+    batch_msg: str,
+    _logger
+) -> dict:
+    if type(initial_sl) is list:
+        initial_sl = initial_sl[0]
+    if type(initial_tl) is list:
+        initial_tl = initial_tl[0]
+    if type(final_sl) is list:
+        final_sl = final_sl[0]
+    if type(final_tl) is list:
+        final_tl = final_tl[0]
+
+    while initial_sl != final_sl:
+        final_query_params = _reset_languages(page= page, language=initial_sl, is_source_language=True, batch_msg=batch_msg)
+        _logger.warning(f"{batch_msg} | Source language mismatch: {initial_sl} → {final_sl}. Resetting...")
+        final_sl = final_query_params['sl'][0]
+    while initial_tl != final_tl:        
+        _logger.warning(f"{batch_msg} | Target language mismatch: {initial_tl} → {final_tl}. Resetting...")
+        final_query_params = _reset_languages(page=page, language=initial_tl, is_source_language=False, batch_msg=batch_msg)
+        final_tl = final_query_params['tl'][0]
+    return {
+        "sl": final_sl,
+        "tl": final_tl
+    }
 # update language name mapping when needed
 def _get_language_name(language_code: str) -> str:
     """Map language code to English name for selectors"""

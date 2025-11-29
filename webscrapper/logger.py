@@ -11,6 +11,8 @@ from constants.output import OUTPUT_FOLDER
 class SingletonLogger:
     _instance: Optional['SingletonLogger'] = None
     _initialized: bool = False
+    
+    _filepath: Optional[str] = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -21,6 +23,9 @@ class SingletonLogger:
         if not self._initialized:
             self.logger: Optional[logging.Logger] = None
             self._initialized = True
+
+    def get_filepath(self) -> Optional[str]:
+        return self._filepath
 
     def setup_logger(self, output_folder: str = None, source_lang: str = SL, target_lang: str = TL, level= logging.INFO) -> logging.Logger:
         """
@@ -46,12 +51,27 @@ class SingletonLogger:
 
         # Ensure output folder exists
         os.makedirs(output_folder, exist_ok=True)
+        
+    
+        log_filename =  f"translation_{source_lang}2{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+      
 
         # Create log filename with timestamp
+        self._filepath = os.path.join(
+            output_folder,
+            log_filename
+        )
+        
+        # Create folder within the output folder
+        os.makedirs(self._filepath, exist_ok=True)
+        
         log_filename = os.path.join(
             output_folder,
-            f"translation_{source_lang}2{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+            log_filename,
+            f"{log_filename}.log"
         )
+
 
         # Create logger
         self.logger = logging.getLogger("TranslationLogger")
