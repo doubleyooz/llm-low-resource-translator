@@ -3,13 +3,13 @@ CONFIG = {
 
     "page_timeout_ms": 100000,  # Page load timeout
     "scroll_delay_range": (0.1, 1.1), # Delay range for scrolling
-    "interaction_delay_range": (3, 7), # Delay range for interactions
+    "interaction_delay_range": (3, 6), # Delay range for interactions
     "new_request_delay_range": (3, 13),  # Delay range between requests
     "retry_attempts": 11,       # Retry attempts for failed requests
     "retry_delay_range": (4, 16),  # Delay range between retries
     "new_batch_delay_range": (80, 200),  # Delay range between batches
     "scroll_amount_range": (20, 400),  # Range for scroll amount
-    "scroll_back_probability": 0.2,    # Probability of scrolling backward
+    "scroll_back_probability": 0.3,    # Probability of scrolling backward
     
    
     "mouse_move_range_x": (-300, 800),  # X-coordinate range for mouse movement

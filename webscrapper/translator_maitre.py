@@ -122,30 +122,30 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
     return results
 
 
-def save_batch_to_csv(batch_results: List[Dict], batch_idx: int):
+def save_batch_to_csv(batch_results: List[Dict], msg: str):
     """Save a single batch to CSV file"""
-    batch_csv_file = f"{translation_logger.get_filepath()}/batch_{batch_idx + 1}.csv"
+    batch_csv_file = f"{translation_logger.get_filepath()}/{msg}.csv"
     try:
         with open(batch_csv_file, "w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=[SL, TL, OL])
             writer.writeheader()
             writer.writerows(batch_results)
-        logger.info(f"Batch {batch_idx + 1} saved to {batch_csv_file}")
+        logger.info(f"{msg} saved to {batch_csv_file}")
         return batch_csv_file
     except Exception as e:
-        logger.error(f"Failed to save batch {batch_idx + 1} to CSV: {e}")
+        logger.error(f"Failed to save {msg} to CSV: {e}")
         return None
 
-def save_batch_to_json(batch_results: List[Dict], batch_idx: int):
+def save_batch_to_json(batch_results: List[Dict], msg: str):
     """Save a single batch to JSON file"""
-    batch_json_file = f"{translation_logger.get_filepath()}/batch_{batch_idx + 1}.json"
+    batch_json_file = f"{translation_logger.get_filepath()}/{msg}.json"
     try:
         with open(batch_json_file, "w", encoding="utf-8") as f:
             json.dump(batch_results, f, ensure_ascii=False, indent=2)
-        logger.info(f"Batch {batch_idx + 1} saved to {batch_json_file}")
+        logger.info(f"{msg} saved to {batch_json_file}")
         return batch_json_file
     except Exception as e:
-        logger.error(f"Failed to save batch {batch_idx + 1} to JSON: {e}")
+        logger.error(f"Failed to save {msg} to JSON: {e}")
         return None
 
 def main():
@@ -171,8 +171,8 @@ def main():
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
     
     # Optional: test with subset
-    sl_sentences = sl_sentences[:180]
-    ol_sentences = ol_sentences[:180]
+    # sl_sentences = sl_sentences[:60]
+    # ol_sentences = ol_sentences[:60]
     
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)
@@ -199,9 +199,9 @@ def main():
                 batch_results = future.result()
                 all_results.extend(batch_results)
                 # Save batch immediately to individual files
-                save_batch_to_csv(batch_results, batch_idx)
+                save_batch_to_csv(batch_results, f"batch_{completed}")
                                 
-                save_batch_to_json(batch_results, batch_idx)
+                save_batch_to_json(batch_results, f"batch_{completed}")
                 
                 logger.info(f"Batch {completed}/{len(batches)} completed.")
             except Exception as e:
@@ -210,17 +210,13 @@ def main():
             
             
     # Save CSV
-    csv_file = f"{translation_logger.get_filepath()}/{SL}_{TL}_{OL}_parallel.csv"
-    with open(csv_file, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=[SL, TL, OL])
-        writer.writeheader()
-        writer.writerows(all_results)
+    csv_file = f"{SL}_{TL}_{OL}_parallel.csv"
+    save_batch_to_csv(all_results, csv_file)
 
     # Save JSON
-    json_file = f"{translation_logger.get_filepath()}/{SL}_{TL}_{OL}_parallel.json"
-    with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(all_results, f, ensure_ascii=False, indent=2)
-
+    json_file = f"{SL}_{TL}_{OL}_parallel.json"
+    save_batch_to_json(all_results, json_file)
+    
     logger.info(f"Translation complete! Saved to {csv_file} and {json_file}")
     logger.info(f"Success rate: {sum(1 for r in all_results if not r[TL].startswith('[')) / len(all_results):.1%}")
 

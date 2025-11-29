@@ -241,13 +241,14 @@ def stealthInteractionRoutine(page: Page, batch_idx: int) -> None:
     batch_msg = f"Batch {batch_idx}"
     _logger = translation_logger.get_logger()
     # light scroll to trigger lazy load
-    if random.random() < 0.04:
+    if random.random() < 0.3:
         simulate_human(page=page, selectors=SAFE_CLICK_SELECTORS, msg=batch_msg)
         
-    if random.random() < 0.5:          
+    if random.random() < 0.2:          
+            _logger.warning(f"{batch_msg} | Using unsafe double click selectors...")
             simulate_human(page=page, selectors=DOUBLE_CLICK_SELECTORS, number_of_clicks=2, button_click_probability=1, msg=batch_msg)
-            _logger.warning(f"{batch_msg} | Finished using unsafe selectors...")
-    elif random.random() < 0.9:
+            _logger.warning(f"{batch_msg} | Finished using unsafe double click selectors...")
+    elif random.random() < 0.2:
             _logger.warning(f"{batch_msg} | Using unsafe selectors...")
             simulate_human(page=page, selectors=UNSAFE_CLICK_SELECTORS, msg=batch_msg)
             _logger.warning(f"{batch_msg} | Finished using unsafe selectors...")
