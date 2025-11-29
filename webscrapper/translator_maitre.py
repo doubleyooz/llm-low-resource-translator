@@ -114,7 +114,7 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
 
         logger.info(f"{batch_msg} | Sleeping before next batch...")          
 
-        get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (batch_idx / (CONFIG['batch_size'] * CONFIG['max_workers'])) * 3)
+        get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (batch_idx / (CONFIG['batch_size'] * CONFIG['max_workers'])) * 3, msg=batch_msg)
         logger.info(f"{batch_msg} | Next batch is ready to start...")           
         context.close()
         browser.close()
@@ -171,8 +171,8 @@ def main():
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
     
     # Optional: test with subset
-    sl_sentences = sl_sentences[:70]
-    ol_sentences = ol_sentences[:70]
+    sl_sentences = sl_sentences[:180]
+    ol_sentences = ol_sentences[:180]
     
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)

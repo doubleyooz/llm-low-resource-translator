@@ -1,3 +1,3 @@
-SL="fr"
-TL="en"
-OL="br"
+SL="fr" # source language
+TL="en" # target language
+OL="br" # original language
