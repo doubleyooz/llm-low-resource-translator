@@ -5,7 +5,7 @@ import json
 import random
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from bibles import VERSIONS, KOAD21, BCNDA, ABK, NIV, BIBLE, BookInfo, VersionInfo, books, POSTFIX, get_random_version
+from constants.bibles import VERSIONS, KOAD21, BCNDA, ABK, NIV, BIBLE, BookInfo, VersionInfo, books, POSTFIX, get_random_version
 from pw_user_agents import USER_AGENTS
 from scrapper_config import CONFIG
 

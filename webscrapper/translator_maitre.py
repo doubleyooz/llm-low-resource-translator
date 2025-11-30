@@ -1,14 +1,15 @@
 import csv
 from datetime import datetime
 import json
-import logging
 import os
 import random
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Tuple, Optional
+from threading import Lock
 
 import pandas as pd
+
 from playwright.sync_api import sync_playwright, Page, BrowserContext
 from constants.output import OUTPUT_FOLDER
 from constants.languages import SL, TL, OL
@@ -26,6 +27,26 @@ Translates sentences from a Parquet dataset and saves results in CSV and JSON fo
 '''
 
 
+# Add global timing variables
+last_batch_start_time = 0
+batch_timing_lock = Lock()
+
+def ensure_batch_interval(batch_idx: int):
+    """Ensure minimum interval between batch starts"""
+    global last_batch_start_time
+    
+    with batch_timing_lock:
+        current_time = time.time()
+        time_since_last_batch = current_time - last_batch_start_time
+        
+        if time_since_last_batch < CONFIG["min_batch_interval"]:
+            wait_time = CONFIG["min_batch_interval"] - time_since_last_batch
+            logger.info(f"Batch {batch_idx + 1} | Waiting {wait_time:.2f}s to maintain batch interval")
+            time.sleep(wait_time)
+        
+        last_batch_start_time = time.time()
+
+
 # Ensure output folder exists
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
@@ -34,6 +55,7 @@ logger = translation_logger.get_logger()
 
 # Worker: Process One Batch
 def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -> List[Dict]:
+    ensure_batch_interval(batch_idx)
     results = []
     proxy = get_proxy(batch_idx)
 
@@ -151,9 +173,10 @@ def save_batch_to_json(batch_results: List[Dict], msg: str):
 def main():
     # Load dataset
     try:
-        df = pd.read_parquet("hf://datasets/Bretagne/UD_Breton-KEB_translation/data/train-00000-of-00001.parquet")
+        dataset_path = "hf://datasets/Bretagne/Autogramm_Breton_translation/data/train-00000-of-00001.parquet"
+        df = pd.read_parquet(dataset_path)
         logger.info(df.info())
-        logger.info(df.head(2))
+        logger.info(dataset_path)
         df = df.sample(frac=1, random_state=random.randint(1, 43)).reset_index(drop=True)
 
     except Exception as e:
@@ -210,11 +233,11 @@ def main():
             
             
     # Save CSV
-    csv_file = f"{SL}_{TL}_{OL}_parallel.csv"
+    csv_file = f"{SL}_{TL}_{OL}_parallel"
     save_batch_to_csv(all_results, csv_file)
 
     # Save JSON
-    json_file = f"{SL}_{TL}_{OL}_parallel.json"
+    json_file = f"{SL}_{TL}_{OL}_parallel"
     save_batch_to_json(all_results, json_file)
     
     logger.info(f"Translation complete! Saved to {csv_file} and {json_file}")
