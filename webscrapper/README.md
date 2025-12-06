@@ -11,3 +11,4 @@ to download dependencies use "pip install --break-system-packages -r requirement
 
 
 Keep your request Google translate lower than 15 requests per minute.
+2025-12-04 14:16:03,385 [INFO] Batch 3 | Translated text: We played chess here, and we didn't put anything away.||They weren't supposed to be old enough to approach the dead yet.||When you look closely, the hair each has a particular color.||They were uneducated, they had never been to school.||Phew, my friends aren't there!||the day he was bought||Wow!

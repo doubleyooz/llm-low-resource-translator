@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Callable, List, Optional
 
 from constants.languages import SL, TL
 from constants.output import OUTPUT_FOLDER
@@ -13,6 +13,8 @@ class SingletonLogger:
     _initialized: bool = False
     
     _filepath: Optional[str] = None
+    _log_filename: Optional[str] = None
+    _ext = ".log"
 
     def __new__(cls):
         if cls._instance is None:
@@ -53,23 +55,23 @@ class SingletonLogger:
         os.makedirs(output_folder, exist_ok=True)
         
     
-        log_filename =  f"translation_{source_lang}2{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        self._log_filename =  f"translation_{source_lang}2{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
       
 
         # Create log filename with timestamp
         self._filepath = os.path.join(
             output_folder,
-            log_filename
+            self._log_filename
         )
         
         # Create folder within the output folder
         os.makedirs(self._filepath, exist_ok=True)
         
-        log_filename = os.path.join(
+        self._log_filename = os.path.join(
             output_folder,
-            log_filename,
-            f"{log_filename}.log"
+            self._log_filename,
+            f"{self._log_filename}{self._ext}"
         )
 
 
@@ -84,7 +86,7 @@ class SingletonLogger:
         formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 
         # File handler
-        file_handler = logging.FileHandler(log_filename, mode='w', encoding='utf-8')
+        file_handler = logging.FileHandler(self._log_filename, mode='w', encoding='utf-8')
         file_handler.setFormatter(formatter)
         file_handler.setLevel(level)
 
@@ -98,7 +100,7 @@ class SingletonLogger:
         self.logger.addHandler(console_handler)
 
         # Log initialization
-        self.logger.info(f"Logger initialized. Log file: {log_filename}")
+        self.logger.info(f"Logger initialized. Log file: {self._log_filename}")
         self.logger.info(f"Output folder: {output_folder}")
 
         return self.logger
@@ -126,6 +128,68 @@ class SingletonLogger:
             logging.shutdown()
             self.logger = None
             self._initialized = False
+            
+    def filter_log(
+        self,
+        filter_func: Callable[[str], bool],
+        new_filename: str = None,
+        suffix: str = "_filtered",
+        prefix: str = "",
+        encoding: str = "utf-8",
+        msg: str = "",
+    ) -> str:
+        """
+        Reads the current log file, applies a filter function to each line,
+        and writes matching lines to a new log file.
+
+        Args:
+            filter_func: Callable that takes a log line (str) and returns True if it should be kept
+            new_filename: Optional full name for the new file (without path). If None, auto-generates.
+            suffix: Suffix to add to original filename (e.g. '_errors', '_warnings')
+            prefix: Prefix to add before the original filename
+            encoding: File encoding (default utf-8)
+
+        Returns:
+            str: Path to the newly created filtered log file
+
+        Raises:
+            FileNotFoundError: If no log file has been created yet
+            RuntimeError: If logger was not initialized
+        """
+        if not self._filepath or not self.logger:
+            raise RuntimeError("Logger has not been initialized yet. Call setup_logger() first.")
+
+        # Auto-generate new filename if not provided
+        if new_filename is None:
+            base_path = Path(current_log_path)
+            stem = base_path.stem
+            new_stem = f"{prefix}{stem}{suffix}"
+            new_log_path = base_path.with_name(f"{new_stem}{base_path.suffix}")
+        else:            
+            new_filename = new_filename.split('.')[0]
+            new_filename += suffix if suffix and not new_filename.endswith(suffix) else ""
+            new_filename += f"{self._ext}" if not new_filename.endswith(f"{self._ext}") else ""
+            new_log_path = self._filepath + '/' + new_filename
+
+        filtered_lines: List[str] = []
+        total_lines = 0
+
+        with open(self._log_filename, 'r', encoding=encoding) as src:
+            for line in src:
+                total_lines += 1
+                if filter_func(line):
+                    filtered_lines.append(line)
+
+        with open(new_log_path, 'w', encoding=encoding) as dst:
+            dst.writelines(filtered_lines)
+
+        # Log the action
+        logger = self.get_logger()
+        logger.info(f"{msg} | Filtered log created: {new_log_path}")
+        logger.info(f"{msg} | Original: {total_lines} lines → Filtered: {len(filtered_lines)} lines "
+                    f"({len(filtered_lines)/total_lines*100:.1f}% kept)")
+
+        return str(new_log_path)
 
 # Create global instance
 translation_logger = SingletonLogger()

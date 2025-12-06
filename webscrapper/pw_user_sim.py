@@ -16,9 +16,10 @@ def set_fatigue(fatigue: float = 1):
 def get_random_delay(delay_range: Tuple[float, float], fatigue: float = 1, msg: str = "") -> None:
     if not delay_range or len(delay_range) != 2:
         delay_range = CONFIG["interaction_delay_range"]
+    delay = random.uniform(*delay_range) * set_fatigue(fatigue)
     if fatigue > 1:
         logger.info(f"{msg} | Sleeping {delay:.1f}s (fatigue mode)") 
-    delay = random.uniform(*delay_range) * set_fatigue(fatigue)
+
     time.sleep(delay)
     
    

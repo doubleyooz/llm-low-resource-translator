@@ -17,6 +17,7 @@ from logger import translation_logger
 SAFE_CLICK_SELECTORS = [
     "button[aria-label='Listen to source text']",
     "button[aria-label='Listen to translation']",
+    "div[aria-label='Main menu']",
     "button[aria-label='Copy translation']",
     "button[aria-label='Rate this translation']",
     "button[aria-label='Share translation']",
@@ -38,7 +39,13 @@ DOUBLE_CLICK_SELECTORS = [
 INPUT_TEXTAREA_SELECTOR = "textarea[aria-label='Source text']"
 
 def get_url (sl, tl):
-    return f"https://translate.google.com/?sl={sl}&tl={tl}&op=translate"
+    n = random.randint(1, 3)
+    if n == 1:
+        return f"https://translate.google.com/?sl={sl}&tl={tl}&op=translate"
+    elif n == 2:
+        return f"https://translate.google.ca/?sl={sl}&tl={tl}&op=translate"
+    else:
+        return f"https://translate.google.co.uk/?sl={sl}&tl={tl}&op=translate"
 
 # -------------------------------
 # Translation Core
@@ -47,6 +54,8 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
     """Translate one sentence using Google Translate."""
     batch_msg = f"Batch {batch_idx}" 
     
+    # Replace double quotes with single quotes to avoid issues
+    sentence = sentence.replace('"', "'")
 
     current_query_params = get_current_query_params(page.url)
  
@@ -65,23 +74,16 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
     
     set_input(page, sentence, msg=batch_msg, logger=logger)
    
-    logger.debug(f"{batch_msg} | Translating: [{current_query_params.get('sl')[0]} → {current_query_params.get('tl')[0]}] {sentence[:30]}...")
+    logger.debug(f"{batch_msg} | Translating: [{current_query_params.get('sl')[0]} → {current_query_params.get('tl')[0]}] {sentence}...")
     
-    result = page.locator("span[jsname='W297wb']").first
-    
-    output = result.inner_text().strip()
-    
-    while not output:
-        logger.debug(f"{batch_msg} | Waiting for translation result...")
-        perform_action(lambda: page.wait_for_timeout(500), f"{batch_msg} | wait for translation")
-        output = result.inner_text().strip()
+    output = get_output(logger=logger, page=page, msg=batch_msg)
     
     if output != sentence:
-        logger.debug(f"{batch_msg} | Translated: {sentence[:30]}... → {output[:30]}...")
+        logger.debug(f"{batch_msg} | Translated: {sentence[:30]}... → {output}...")
         stealthInteractionRoutine(page, batch_idx)
         return output
     else:
-        logger.info(current_query_params)
+        logger.info(f"{batch_msg} | {current_query_params}")
         logger.info(f"{batch_msg} | {SL} -> {TL}")
         if current_query_params.get('sl')[0] == SL and current_query_params.get('tl')[0] == TL:
             logger.warning(f"{batch_msg} | Clicking on swap languages {DOUBLE_CLICK_SELECTORS[0]} for backtranslation...")
@@ -98,7 +100,7 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
                     page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Failed to click swap languages button {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                     raise e
                 
-            output = result.inner_text().strip()
+            output = get_output(logger=logger, page=page, msg=batch_msg)
 
             if output == sentence:
                   
@@ -108,8 +110,7 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
                     logger.error(f"{batch_msg} | Backtranslation failed, output matches input.")
                     logger.debug(f"{batch_msg} | Attempting to reload in order to get the translation...")
                     page.reload()
-                    result = page.locator("span[jsname='W297wb']").first
-                    output = result.inner_text().strip()
+                    output = get_output(logger=logger, page=page, msg=batch_msg)
 
                     if output == sentence:
                         logger.error(f"{batch_msg} | Backtranslation failed again after reload, output matches input.")
@@ -235,6 +236,18 @@ def set_input(page: Page, sentence: str, msg: str = '', logger: logging.Logger =
         attempts += 1
     if final_text != sentence:
         raise ValueError(f"{msg} | Failed to set input text after {attempts} attempts.")
+    
+def get_output(page: Page, logger: logging.Logger, msg: str = '') -> str:
+    result = page.locator("span[jsname='jqKxS']").first
+    
+    output = result.inner_text()
+    
+    while not output:
+        logger.debug(f"{msg} | Waiting for translation result...")
+        perform_action(lambda: page.wait_for_timeout(500), f"{msg} | wait for translation")
+        output = result.inner_text()
+    logger.debug(f"{msg} | Obtained translation output: {output}...")
+    return output
     
   
 def stealthInteractionRoutine(page: Page, batch_idx: int) -> None:

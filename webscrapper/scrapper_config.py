@@ -16,8 +16,9 @@ CONFIG = {
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   
     "max_scroll_iterations": 40,     # Prevent infinite scroll loops
-    "max_workers": 9,                    # Concurrent translation workers
-    "batch_size": 15,                    # Sentences per context (proxy switch)    
+    "max_workers": 4,                    # Concurrent translation workers
+    "batch_size": 64,                    # Sentences per context (proxy switch)    
+    "sentences_per_request": 8,         # Sentences per translation request
     "proxy_rotation": False,    
     
     # get_bible_versions.py specific
@@ -30,7 +31,7 @@ CONFIG = {
     # scrapper_google_translate.py specific
     "safe_button_click_probability": 0.3,  # Probability of clicking safe buttons
     "unsafe_button_click_probability": 0.2,  # Probability of clicking unsafe buttons
-    "double_button_click_probability": 0.1,  # Probability of double clicking buttons
+    "double_button_click_probability": 0.15,  # Probability of double clicking buttons
     
     # translator_maitre.py specific   
     "button_click_probability": 0.7,  # Probability of clicking a button

@@ -27,9 +27,17 @@ Translates sentences from a Parquet dataset and saves results in CSV and JSON fo
 '''
 
 
+# Ensure output folder exists
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+
+logger = translation_logger.get_logger()
+
 # Add global timing variables
 last_batch_start_time = 0
 batch_timing_lock = Lock()
+
+MERGE_SYMBOL = "|||"  # Symbol to merge multiple sentences
 
 def ensure_batch_interval(batch_idx: int):
     """Ensure minimum interval between batch starts"""
@@ -47,14 +55,8 @@ def ensure_batch_interval(batch_idx: int):
         last_batch_start_time = time.time()
 
 
-# Ensure output folder exists
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-
-logger = translation_logger.get_logger()
-
 # Worker: Process One Batch
-def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -> List[Dict]:
+def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List[Dict]:
     ensure_batch_interval(batch_idx)
     results = []
     proxy = get_proxy(batch_idx)
@@ -90,44 +92,56 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
         batch_msg = f"Batch {current_batch}"
         logger.info(f"{batch_msg} | Proxy: {proxy['server'] if proxy else 'None'} | {len(sentence_pairs)} sentences")
         perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), f"{batch_msg} | goto")
+        
+        extracted_list = [tup[0] for tup in sentence_pairs]
+        logger.debug(f"{batch_msg} | Extracted_list: {len(extracted_list)} elements")
+        chunked_sentences = [sentence_pairs[i:i + CONFIG["sentences_per_request"]] for i in range(0, len(sentence_pairs), CONFIG["sentences_per_request"])]
+        logger.debug(f"{batch_msg} | Chunked_sentences: {len(sentence_pairs)} elements")
+        
         error_count = 0
-        for i, pair in enumerate(sentence_pairs):
+
+        for i, chunk in enumerate(chunked_sentences):            
+            
             try:
                 if error_count >= 5:
                     logger.error(f"{batch_msg} | Too many errors, adding pause.")
                     page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Too many errors, adding pause {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                     get_random_delay(CONFIG["new_request_delay_range"], fatigue=2, msg=f"{batch_msg}: Cooling down after errors")
                     error_count = 0
-                    
-                logger.info(f"{batch_msg} | Translating {i + 1}/{len(sentence_pairs)}: {pair[0][:50]}...")
-                
+                logger.debug(f"{batch_msg} | Translating {len(chunk)} sentences per request")
+
+                merged_text = merge_sentences([pair[0] for pair in chunk])
+                logger.info(f"{batch_msg} | Translating {i + 1}/{len(chunked_sentences)}: {merged_text[:50]}...")
+            
                 for attempt in range(CONFIG["retry_attempts"]):
                     try:
-                        translation = translate_sentence(page=page, sentence=pair[0], batch_idx=current_batch, logger=logger)
+                        translation = translate_sentence(page=page, sentence=merged_text, batch_idx=current_batch, logger=logger)
                         break
                     except Exception as e:
-                        logger.warning(f"{batch_msg} | Attempt {attempt+1} failed for '{pair[0][:40]}...': {e}")
+                        logger.warning(f"{batch_msg} | Attempt {attempt+1} failed for '{merged_text[:40]}...': {e}")
                         get_random_delay(CONFIG["retry_delay_range"])
                         page.reload()
                         get_random_delay(CONFIG["retry_delay_range"])
                         # checks if it's the last attempt
                         if attempt == CONFIG["retry_attempts"] - 1:
-                            translation = f"[TRANSLATION FAILED] - {pair[0]}"
+                            translation = f"[TRANSLATION FAILED] - {merged_text}"
                             error_count += 1
                             
+                split_translations = split_translation(translation, len(chunk), msg=batch_msg)
 
-
-                results.append({    
-                    f"{SL}": pair[0],
-                    f"{TL}": translation,
-                    f"{OL}": pair[1]
-                })
+                for i, translation in enumerate(split_translations):
+                    
+                    results.append({    
+                        f"{SL}": chunk[i][0],
+                        f"{TL}": translation.strip(),
+                        f"{OL}": chunk[i][1]
+                    })
 
             except Exception as e:
                 logger.error(f"{batch_msg} | Unexpected error: {e}")
                 page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Unexpected error: {e} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                 error_count += 1
-                results.append({f"{SL}": pair[0], f"{TL}": "[ERROR]", f"{OL}": pair[1]})
+                results.append({f"{SL}": chunk[i][0], f"{TL}": "[ERROR]", f"{OL}": chunk[i][1]})
             finally:
                 # Random delay between requests
                 get_random_delay(CONFIG["new_request_delay_range"])
@@ -135,13 +149,42 @@ def process_batch(sentence_pairs: Tuple[List[str], List[str]], batch_idx: int) -
         # Random delay between batches
 
         logger.info(f"{batch_msg} | Sleeping before next batch...")          
-
+        translation_logger.filter_log(
+            filter_func=lambda line: batch_msg in line,
+            new_filename=batch_msg,
+            msg=batch_msg
+        )
         get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (batch_idx / (CONFIG['batch_size'] * CONFIG['max_workers'])) * 3, msg=batch_msg)
         logger.info(f"{batch_msg} | Next batch is ready to start...")           
         context.close()
         browser.close()
 
     return results
+
+
+def merge_sentences(sentences: List[str]) -> str:
+    """Merge multiple sentences with the separator symbol"""
+
+    return f" {MERGE_SYMBOL} ".join(sentences)
+
+def split_translation(translated_text: str, expected_count: int, msg: str = '') -> List[str]:
+    """
+    Split translated text back into individual sentences using the merge symbol.
+    Handles cases where the symbol might be preserved in translation.
+    """
+    logger.debug(f"{msg} | Translated text: {translated_text}")
+    logger.debug(f"{msg} | Splitting translated text into {expected_count} parts on the symbol {MERGE_SYMBOL}...")
+    # Try to split by the original merge symbol
+    parts = translated_text.split(MERGE_SYMBOL)
+    
+    # If we got the expected number of parts, return them
+    logger.debug(f"{msg} | Gathered parts {(len(parts))} {parts}")
+    if len(parts) != expected_count:   
+        logger.warning(f"{msg} | Expected {expected_count} parts but got {len(parts)} after splitting. Attempting recovery...")
+        raise Exception(f"{msg} | Split count mismatch Expected {expected_count} but got {len(parts)}")
+
+    return parts
+    
 
 
 def save_batch_to_csv(batch_results: List[Dict], msg: str):
@@ -170,6 +213,7 @@ def save_batch_to_json(batch_results: List[Dict], msg: str):
         logger.error(f"Failed to save {msg} to JSON: {e}")
         return None
 
+
 def main():
     # Load dataset
     try:
@@ -194,8 +238,8 @@ def main():
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
     
     # Optional: test with subset
-    # sl_sentences = sl_sentences[:60]
-    # ol_sentences = ol_sentences[:60]
+    # sl_sentences = sl_sentences[:260]
+    # ol_sentences = ol_sentences[:260]
     
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)
@@ -240,8 +284,16 @@ def main():
     json_file = f"{SL}_{TL}_{OL}_parallel"
     save_batch_to_json(all_results, json_file)
     
-    logger.info(f"Translation complete! Saved to {csv_file} and {json_file}")
-    logger.info(f"Success rate: {sum(1 for r in all_results if not r[TL].startswith('[')) / len(all_results):.1%}")
+     
+    if(len(all_results) == 0):
+        logger.warning("Catastrophic failure! No results were obtained.")
+        logger.warning(f"Whatever results were saved to {csv_file} and {json_file}")
+        
+    else:
+        logger.info(f"Translation complete! Saved to {csv_file} and {json_file}")
+        logger.info(f"Success rate: {sum(1 for r in all_results if not r[TL].startswith('[')) / len(all_results):.1%}")
+
+
 
 if __name__ == "__main__":
     main()
