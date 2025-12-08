@@ -248,8 +248,8 @@ def main():
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
     
     # Optional: test with subset
-    sl_sentences = sl_sentences[:395]
-    ol_sentences = ol_sentences[:395]
+    # sl_sentences = sl_sentences[:395]
+    # ol_sentences = ol_sentences[:395]
     
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)
