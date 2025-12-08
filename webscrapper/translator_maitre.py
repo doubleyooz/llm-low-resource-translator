@@ -37,7 +37,7 @@ logger = translation_logger.get_logger()
 last_batch_start_time = 0
 batch_timing_lock = Lock()
 
-MERGE_SYMBOL = "|||"  # Symbol to merge multiple sentences
+MERGE_SYMBOL = "<|||>"  # Symbol to merge multiple sentences
 
 def ensure_batch_interval(batch_idx: int):
     """Ensure minimum interval between batch starts"""
@@ -63,7 +63,7 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
 
     with sync_playwright() as p:
         browser_args = {
-            "headless": False,
+            "headless": True,
           # "args": ["--no-sandbox", "--disable-setuid-sandbox"]
         }
         if proxy:
@@ -88,14 +88,22 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
         )
 
         page = context.new_page()
+        
+        page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => false});
+            window.chrome = { runtime: {}, app: {}, LoadTimes: function(){} };
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+        """)
+        
+        
         current_batch = batch_idx + 1
         batch_msg = f"Batch {current_batch}"
         logger.info(f"{batch_msg} | Proxy: {proxy['server'] if proxy else 'None'} | {len(sentence_pairs)} sentences")
         perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), f"{batch_msg} | goto")
         
-        extracted_list = [tup[0] for tup in sentence_pairs]
-        logger.debug(f"{batch_msg} | Extracted_list: {len(extracted_list)} elements")
-        chunked_sentences = [sentence_pairs[i:i + CONFIG["sentences_per_request"]] for i in range(0, len(sentence_pairs), CONFIG["sentences_per_request"])]
+        sentences_per_request = random.randint(*CONFIG["sentences_per_request_range"])
+        chunked_sentences = [sentence_pairs[i:i + sentences_per_request] for i in range(0, len(sentence_pairs), sentences_per_request)]
         logger.debug(f"{batch_msg} | Chunked_sentences: {len(sentence_pairs)} elements")
         
         error_count = 0
@@ -110,8 +118,8 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
                     error_count = 0
                 logger.debug(f"{batch_msg} | Translating {len(chunk)} sentences per request")
 
-                merged_text = merge_sentences([pair[0] for pair in chunk])
-                logger.info(f"{batch_msg} | Translating {i + 1}/{len(chunked_sentences)}: {merged_text[:50]}...")
+                merged_text = merge_sentences([pair[0] for pair in chunk], msg=batch_msg)
+                logger.info(f"{batch_msg} | Translating {i + 1}/{len(chunked_sentences)}: {merged_text}...")
             
                 for attempt in range(CONFIG["retry_attempts"]):
                     try:
@@ -132,9 +140,9 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
                 for i, translation in enumerate(split_translations):
                     
                     results.append({    
-                        f"{SL}": chunk[i][0],
+                        f"{SL}": " ".join(chunk[i][0].split()),
                         f"{TL}": translation.strip(),
-                        f"{OL}": chunk[i][1]
+                        f"{OL}": " ".join(chunk[i][1].split())
                     })
 
             except Exception as e:
@@ -151,7 +159,7 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
         logger.info(f"{batch_msg} | Sleeping before next batch...")          
         translation_logger.filter_log(
             filter_func=lambda line: batch_msg in line,
-            new_filename=batch_msg,
+            new_filename=batch_msg if error_count > 0 else f"{batch_msg}_err",
             msg=batch_msg
         )
         get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (batch_idx / (CONFIG['batch_size'] * CONFIG['max_workers'])) * 3, msg=batch_msg)
@@ -162,9 +170,10 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
     return results
 
 
-def merge_sentences(sentences: List[str]) -> str:
+def merge_sentences(sentences: List[str], msg: str = '') -> str:
     """Merge multiple sentences with the separator symbol"""
-
+    logger.debug(f"{msg} | Sentences to merge: {sentences}")
+    logger.debug(f"{msg} | Merging {len(sentences)} sentences with symbol {MERGE_SYMBOL}...")
     return f" {MERGE_SYMBOL} ".join(sentences)
 
 def split_translation(translated_text: str, expected_count: int, msg: str = '') -> List[str]:
@@ -195,7 +204,7 @@ def save_batch_to_csv(batch_results: List[Dict], msg: str):
             writer = csv.DictWriter(f, fieldnames=[SL, TL, OL])
             writer.writeheader()
             writer.writerows(batch_results)
-        logger.info(f"{msg} saved to {batch_csv_file}")
+        logger.info(f"{msg} csv saved to {batch_csv_file}")
         return batch_csv_file
     except Exception as e:
         logger.error(f"Failed to save {msg} to CSV: {e}")
@@ -207,7 +216,7 @@ def save_batch_to_json(batch_results: List[Dict], msg: str):
     try:
         with open(batch_json_file, "w", encoding="utf-8") as f:
             json.dump(batch_results, f, ensure_ascii=False, indent=2)
-        logger.info(f"{msg} saved to {batch_json_file}")
+        logger.info(f"{msg} json saved to {batch_json_file}")
         return batch_json_file
     except Exception as e:
         logger.error(f"Failed to save {msg} to JSON: {e}")
@@ -219,14 +228,15 @@ def main():
     try:
         dataset_path = "hf://datasets/Bretagne/Autogramm_Breton_translation/data/train-00000-of-00001.parquet"
         df = pd.read_parquet(dataset_path)
-        logger.info(df.info())
+        logger.info("DataFrame loaded. Shape: %s, Columns: %s, Data Types:\n%s", 
+            df.shape, df.columns.tolist(), df.dtypes)
         logger.info(dataset_path)
         df = df.sample(frac=1, random_state=random.randint(1, 43)).reset_index(drop=True)
 
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
         return
-    list_of_rows = df.values.tolist()
+    # list_of_rows = df.values.tolist()
    
     sl_sentences = df[SL].dropna().tolist()
     ol_sentences = df[OL].dropna().tolist()
@@ -238,8 +248,8 @@ def main():
     logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
     
     # Optional: test with subset
-    # sl_sentences = sl_sentences[:260]
-    # ol_sentences = ol_sentences[:260]
+    sl_sentences = sl_sentences[:395]
+    ol_sentences = ol_sentences[:395]
     
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)
@@ -290,9 +300,36 @@ def main():
         logger.warning(f"Whatever results were saved to {csv_file} and {json_file}")
         
     else:
-        logger.info(f"Translation complete! Saved to {csv_file} and {json_file}")
-        logger.info(f"Success rate: {sum(1 for r in all_results if not r[TL].startswith('[')) / len(all_results):.1%}")
+        logger.info(f"Translation complete! Saved to {csv_file}.csv and {json_file}.json")
+        
+        # 1. Overall success rate
+        successful = sum(1 for r in all_results if not r[TL].startswith('['))
+        failed = len(all_results) - successful
+        logger.info(f"Total sentences processed: {len(all_results):,}")
+        logger.info(f"Successful translations : {successful:,} ({successful/len(all_results):.1%})")
+        logger.info(f"Failed / errored        : {failed:,} ({failed/len(all_results):.1%})")
 
+        # 2. Print ALL errors with source + original + failed translation
+        if failed > 0:
+            logger.warning(f"\n{'='*60}")
+            logger.warning(f"  DETAILED ERROR REPORT ({failed} failed translations)")
+            logger.warning(f"{'='*60}")
+
+            for idx, row in enumerate(all_results, 1):
+                translation = row[TL]
+                if translation.startswith('['):  # [ERROR], [TRANSLATION FAILED], etc.
+                    src = row[SL]
+                    orig = row.get(OL, "N/A")
+                    logger.error(f"FAIL #{idx:04d} | {SL} → {TL}")
+                    logger.error(f"   Source ({SL}):     {src}")
+                    logger.error(f"   Original ({OL}):  {orig}")
+                    logger.error(f"   Result:           {translation}")
+                    logger.error(f"   {'-'*50}")
+
+            logger.warning(f"END OF ERROR REPORT")
+            logger.warning(f"{'='*60}\n")
+        else:
+            logger.info("Perfect run! No errors detected.")
 
 
 if __name__ == "__main__":
