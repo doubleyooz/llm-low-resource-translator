@@ -226,7 +226,8 @@ def save_batch_to_json(batch_results: List[Dict], msg: str):
 def main():
     # Load dataset
     try:
-        dataset_path = "hf://datasets/Bretagne/Autogramm_Breton_translation/data/train-00000-of-00001.parquet"
+        # dataset_path = "hf://datasets/Bretagne/Autogramm_Breton_translation/data/train-00000-of-00001.parquet"
+        dataset_path = "hf://datasets/Bretagne/UD_Breton-KEB_translation/data/train-00000-of-00001.parquet"
         df = pd.read_parquet(dataset_path)
         logger.info("DataFrame loaded. Shape: %s, Columns: %s, Data Types:\n%s", 
             df.shape, df.columns.tolist(), df.dtypes)
