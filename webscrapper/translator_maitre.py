@@ -13,8 +13,10 @@ import pandas as pd
 from playwright.sync_api import sync_playwright, Page, BrowserContext
 from constants.output import OUTPUT_FOLDER
 from constants.languages import SL, TL, OL
+from exceptions.not_found_exception import NotFoundException
 from scrapper_config import CONFIG
-from scrapper_google_translate import get_url, translate_sentence
+from scrapper_korpus_kernewek import get_url, translate_sentence
+from scrapper_korpus_kernewek import wordbank
 from pw_proxies import get_proxy
 from pw_user_agents import USER_AGENTS
 from pw_user_sim import get_random_delay, perform_action
@@ -126,6 +128,11 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
                         translation = translate_sentence(page=page, sentence=merged_text, batch_idx=current_batch, logger=logger)
                         break
                     except Exception as e:
+                        if(isinstance(e, NotFoundException)):
+                            logger.warning(e.message + f" - {merged_text}")
+                            translation = f"[NOT FOUND] - {merged_text}"
+                            page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | ERROR: {e.message} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                            break
                         logger.warning(f"{batch_msg} | Attempt {attempt+1} failed for '{merged_text[:40]}...': {e}")
                         get_random_delay(CONFIG["retry_delay_range"])
                         page.reload()
@@ -134,16 +141,31 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
                         if attempt == CONFIG["retry_attempts"] - 1:
                             translation = f"[TRANSLATION FAILED] - {merged_text}"
                             error_count += 1
-                            
-                split_translations = split_translation(translation, len(chunk), msg=batch_msg)
-
-                for i, translation in enumerate(split_translations):
+                logger.debug(f"{batch_msg} | translation type: {type(translation)}")
+                if isinstance(translation, tuple):
+                    logger.debug(f"{batch_msg} | Translation {translation}")
+                    source_texts, target_texts = translation[0], translation[1]
                     
-                    results.append({    
-                        f"{SL}": " ".join(chunk[i][0].split()),
-                        f"{TL}": translation.strip(),
-                        f"{OL}": " ".join(chunk[i][1].split())
-                    })
+                    for i, (sl, tl) in enumerate(zip(source_texts, target_texts)):
+                        logger.debug(f"{batch_msg} | sl: {sl}")
+                        logger.debug(f"{batch_msg} | tl: {tl}")
+                        logger.debug(f"{batch_msg} | merged_text: {merged_text}")
+                       
+                        results.append({    
+                            SL: sl.strip() if sl else "",
+                            TL: tl.strip() if tl else "",
+                            OL: merged_text.strip()
+                        })
+                else: 
+                    split_translations = split_translation(translation, len(chunk), msg=batch_msg)
+
+                    for i, translation in enumerate(split_translations):
+                        
+                        results.append({    
+                            SL: " ".join(chunk[i][0].split()),
+                            TL: translation.strip(),
+                            OL: " ".join(chunk[i][1].split())
+                        })
 
             except Exception as e:
                 logger.error(f"{batch_msg} | Unexpected error: {e}")
@@ -177,10 +199,10 @@ def merge_sentences(sentences: List[str], msg: str = '') -> str:
     return f" {MERGE_SYMBOL} ".join(sentences)
 
 def split_translation(translated_text: str, expected_count: int, msg: str = '') -> List[str]:
-    """
-    Split translated text back into individual sentences using the merge symbol.
-    Handles cases where the symbol might be preserved in translation.
-    """
+    if not isinstance(translated_text, str):
+        logger.debug(f"{msg} | Translated text is not a string: {translated_text}")
+        return translated_text
+   
     logger.debug(f"{msg} | Translated text: {translated_text}")
     logger.debug(f"{msg} | Splitting translated text into {expected_count} parts on the symbol {MERGE_SYMBOL}...")
     # Try to split by the original merge symbol
@@ -222,36 +244,39 @@ def save_batch_to_json(batch_results: List[Dict], msg: str):
         logger.error(f"Failed to save {msg} to JSON: {e}")
         return None
 
-
-def main():
-    # Load dataset
+def load_dataset() -> Tuple[List[str], List[str]]:  
     try:
+        dataset_path = "./scrapper_korpus_kernewek"
+        # dataset_path = "hf://datasets/Bretagne/Banque_Sonore_Dialectes_Bretons"
         # dataset_path = "hf://datasets/Bretagne/Autogramm_Breton_translation/data/train-00000-of-00001.parquet"
-        dataset_path = "hf://datasets/Bretagne/UD_Breton-KEB_translation/data/train-00000-of-00001.parquet"
-        df = pd.read_parquet(dataset_path)
+        # dataset_path = "hf://datasets/Bretagne/UD_Breton-KEB_translation/data/train-00000-of-00001.parquet"
+        # df = pd.read_parquet(dataset_path)
+        df = pd.DataFrame({SL: wordbank, OL: wordbank})
         logger.info("DataFrame loaded. Shape: %s, Columns: %s, Data Types:\n%s", 
             df.shape, df.columns.tolist(), df.dtypes)
         logger.info(dataset_path)
         df = df.sample(frac=1, random_state=random.randint(1, 43)).reset_index(drop=True)
-
+        sl_sentences = df[SL].dropna().tolist()
+        ol_sentences = df[OL].dropna().tolist()
+        if not sl_sentences:
+            raise ValueError(f"No {SL.upper()} sentences found in dataset.")
+        
+            
+        logger.info(f"{SL.upper()} sentences length: {len(sl_sentences)}")
+        print(sl_sentences[0])
+        logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
+        
+            
+        return sl_sentences, ol_sentences
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
         return
-    # list_of_rows = df.values.tolist()
-   
-    sl_sentences = df[SL].dropna().tolist()
-    ol_sentences = df[OL].dropna().tolist()
-    if not sl_sentences:
-        logger.error(f"No {SL.upper()} sentences found.")
-        return
-    logger.info(f"{SL.upper()} sentences length: {len(sl_sentences)}")
-    print(sl_sentences[0])
-    logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
-    
-    # Optional: test with subset
-    # sl_sentences = sl_sentences[:395]
-    # ol_sentences = ol_sentences[:395]
-    
+
+
+def main():
+    # Load dataset   
+    sl_sentences, ol_sentences = load_dataset()
+
     # Merge the lists using zip()
     merged_iterator = zip(sl_sentences, ol_sentences)
 

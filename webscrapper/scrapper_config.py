@@ -5,7 +5,7 @@ CONFIG = {
     "scroll_delay_range": (0.1, 1.1), # Delay range for scrolling
     "interaction_delay_range": (2, 6), # Delay range for interactions
     "new_request_delay_range": (3, 15),  # Delay range between requests
-    "retry_attempts": 11,       # Retry attempts for failed requests
+    "retry_attempts": 2,       # Retry attempts for failed requests
     "retry_delay_range": (4, 16),  # Delay range between retries
     "new_batch_delay_range": (80, 250),  # Delay range between batches
     "scroll_amount_range": (20, 400),  # Range for scroll amount
@@ -16,9 +16,9 @@ CONFIG = {
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   
     "max_scroll_iterations": 40,     # Prevent infinite scroll loops
-    "max_workers": 10,                    # Concurrent translation workers
-    "batch_size": 36,                    # Sentences per context (proxy switch)    
-    "sentences_per_request_range": (7, 12),         # Sentences per translation request
+    "max_workers": 7,                    # Concurrent translation workers
+    "batch_size": 12,                    # Sentences per context (proxy switch)    
+    "sentences_per_request_range": (1, 1),         # Sentences per translation request
     "proxy_rotation": False,    
     
     # get_bible_versions.py specific

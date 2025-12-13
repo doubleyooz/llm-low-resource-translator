@@ -13,8 +13,8 @@ def set_fatigue(fatigue: float = 1):
     return max(1.0, fatigue)
     
 
-def get_random_delay(delay_range: Tuple[float, float], fatigue: float = 1, msg: str = "") -> None:
-    if not delay_range or len(delay_range) != 2:
+def get_random_delay(delay_range: Tuple[float, float] = None, fatigue: float = 1, msg: str = "") -> None:
+    if delay_range is None or len(delay_range) != 2:
         delay_range = CONFIG["interaction_delay_range"]
     delay = random.uniform(*delay_range) * set_fatigue(fatigue)
     if fatigue > 1:
