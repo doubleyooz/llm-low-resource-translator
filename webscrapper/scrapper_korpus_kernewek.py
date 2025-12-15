@@ -16,35 +16,38 @@ from pw_user_sim import _click_element, get_random_delay, perform_action, simula
 from logger import translation_logger
 
 wordbank =   [
-        "admission", "secret", "lie", "affair", "betrayal", "blackmail",
-        "bribe", "leak", "whistleblower", "document", "tape", "email", "letter",
-        "deathbed", "prophecy", "prediction", "dream", "collapse",
-        "addiction", "overdose", "abortion", "rape", "assault", "body",
-        "grave", "conspiracy", "plot", "coup", "theft", "money",
-        "account", "offshore", "shell", "threat", "hitman", "motive", "revenge",
-        "stalker", "ritual", "blood", "oath", "infidelity",
-        "mistress", "pregnancy", "bastard", "paternity", "test", "heir", "will",
-        "bankruptcy", "scandal", "exposure", "shame", "guilt", "remorse",
-        "forgiveness", "redemption", "sobriety", "intervention", "cover", "lobotomy", "torture",
-        "memory", "repression", "trigger", "note", "manifesto", "terrorist", "cell",
-        "sleeper", "mole", "defector", "file",
-        "family", "home", "child", "baby", "mother", "father", "sister", "brother", "friend", "love",
-        "heart", "pain", "tears", "fear", "anger", "hate", "hope", "dream", "night", "day",
-        "life", "death", "time", "moment", "story", "past", "memory", "change", "loss", "grief",
-        "fight", "war", "peace", "power", "money", "job", "school", "teacher", "doctor", "hospital",
-        "police", "crime", "house", "car", "phone", "message", "letter", "photo", "party", "wedding",
+"television", "screen", "remote", "channel", "movie", "actor", "actress", "director", "scene", "script",
+"radio", "news", "reporter", "camera", "lens", "flash", "film", "roll", "studio", "stage",
+"ticket", "seat", "audience", "crowd", "applause", "curtain", "costume", "mask", "mirror", "shadow",
+"river", "lake", "ocean", "island", "forest", "desert", "valley", "peak", "cliff", "cave",
+"farm", "field", "crop", "harvest", "barn", "tractor", "tool", "hammer", "nail", "screw",
+"building", "tower", "bridge", "tunnel", "station", "platform", "track", "signal", "bell", "whistle",
 
-        "divorce", "custody", "abandonment", "orphan", "adoption", "foster", "kidnapping", "ransom", "hostage", "escape",
-        "exile", "defection", "asylum", "deportation", "smuggling", "trafficking", "slavery", "auction", "plantation", "lynching",
-        "genocide", "massacre", "atrocity", "warcrime", "tribunal", "execution", "guillotine", "firing", "hanging", "electrocution",
-        "poison", "arsenic", "cyanide", "venom", "curse", "hex", "witch", "inquisition", "heretic",
-        "schism", "crusade", "jihad", "martyr", "saint", "miracle", "stigmata", "exorcism", "possession", "demon",
-        "angel", "apocalypse", "rapture", "antichrist", "beast", "mark", "plague", "famine", "locust", "armageddon",
-        "resurrection", "reincarnation", "karma", "enlightenment", "guru", "mantra", "chakra", "aura",
-        "medium", "ghost", "poltergeist", "haunting", "cemetery", "crypt", "mausoleum", "embalming", "autopsy",
-        "forensics", "ballistics", "fingerprint", "surveillance", "wiretap", "informant", "snitch", "rat", "witness", "perjury",
-        "verdict", "sentence", "parole", "pardon", "amnesty", "fugitive", "paper", "bounty", "reward", "vigilante",
-        "mob", "riot", "looting", "arson", "bombing", "detonation", "shrapnel", "amputation", "prosthetic", "rehabilitation"
+"computer", "keyboard", "mouse", "monitor", "printer", "internet", "website", "email", "password", "account",
+"phone", "call", "text", "app", "battery", "charger", "cable", "headphones", "speaker", "microphone",
+"calendar", "date", "event", "reminder", "note", "list", "task", "project", "deadline", "meeting",
+"email", "folder", "file", "document", "spreadsheet", "presentation", "slide", "chart", "graph", "data",
+"network", "server", "cloud", "storage", "backup", "virus", "software", "program", "code", "bug",
+"window", "door", "key", "lock", "handle", "knob", "switch", "button", "lever", "dial",
+"fan", "air", "heat", "thermostat", "fridge", "oven", "microwave", "toaster", "kettle", "pan",
+"pot", "lid", "sink", "tap", "soap", "towel", "brush", "comb", "mirror", "razor",
+"toothbrush", "paste", "shower", "bath", "tub", "curtain", "mat", "rug", "carpet", "tile",
+"pillow", "blanket", "sheet", "mattress", "frame", "drawer", "shelf", "closet", "hanger", "laundry",
+"basket", "iron", "board", "detergent", "fabric", "thread", "needle", "button", "zipper", "belt",
+"umbrella", "raincoat", "boots", "socks", "gloves", "scarf", "cap", "sunglasses", "backpack", "suitcase",
+"luggage", "passport", "visa", "flight", "hotel", "room", "keycard", "lobby", "elevator", "stairs",
+"pool", "gym", "exercise", "weight", "machine", "treadmill", "bicycle", "helmet", "gloves", "pad",
+
+"run", "walk", "jump", "swim", "fly", "drive", "ride", "cook", "eat", "drink", "death", "sadness",
+"read", "write", "speak", "listen", "watch", "see", "hear", "touch", "feel", "smell",
+"think", "know", "believe", "understand", "remember", "forget", "learn", "teach", "study", "work",
+"play", "dance", "sing", "laugh", "cry", "shout", "whisper", "sleep", "wake", "dream",
+"build", "break", "fix", "clean", "wash", "paint", "draw", "cut", "open", "close"
+
+
+
+
+
 ]
 
     
@@ -110,7 +113,7 @@ def get_output(page: Page, logger: logging.Logger, msg: str = '') -> Tuple[List[
     max_attempts = 2
     while(attempts < max_attempts):
         logger.debug(f"{msg} | Attempt {attempts+1}/{max_attempts} {buttons.last.inner_text()}")
-        _click_element(buttons.last)
+        _click_element(buttons.last, msg)
         first_half = page.locator("tr[class='even']")
         second_half = page.locator("tr[class='odd']")
         even_elements = first_half.element_handles()
@@ -138,4 +141,9 @@ def get_output(page: Page, logger: logging.Logger, msg: str = '') -> Tuple[List[
         kw_output.append(result[1].strip())
         
     return en_output, kw_output
-    
+    "television", "screen", "remote", "channel", "movie", "actor", "actress", "director", "scene", "script",
+"radio", "news", "reporter", "camera", "lens", "flash", "film", "roll", "studio", "stage",
+"ticket", "seat", "audience", "crowd", "applause", "curtain", "costume", "mask", "mirror", "shadow",
+"river", "lake", "ocean", "island", "forest", "desert", "valley", "peak", "cliff", "cave",
+"farm", "field", "crop", "harvest", "barn", "tractor", "tool", "hammer", "nail", "screw",
+"building", "tower", "bridge", "tunnel", "station", "platform", "track", "signal", "bell", "whistle"

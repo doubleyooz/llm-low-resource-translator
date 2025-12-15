@@ -38,9 +38,22 @@ logger = translation_logger.get_logger()
 # Add global timing variables
 last_batch_start_time = 0
 batch_timing_lock = Lock()
+completed_batches = 0
+completed_batches_lock = Lock()
 
 MERGE_SYMBOL = "<|||>"  # Symbol to merge multiple sentences
 
+def ensure_interval_before_next_batch(batch_idx: int, total_of_batches: int, msg: str = ""):
+    global completed_batches
+    with completed_batches_lock:
+        # Random delay between batches
+        completed_batches += 1
+        remaining_batches = total_of_batches - completed_batches
+        if CONFIG['max_workers'] <= remaining_batches:            
+            logger.info(f"{msg} | Sleeping before next batch...")
+            get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (batch_idx / (CONFIG['batch_size'] * CONFIG['max_workers'])) * 3, msg=msg)
+            logger.info(f"{msg} | Next batch is ready to start...") 
+        
 def ensure_batch_interval(batch_idx: int):
     """Ensure minimum interval between batch starts"""
     global last_batch_start_time
@@ -58,7 +71,8 @@ def ensure_batch_interval(batch_idx: int):
 
 
 # Worker: Process One Batch
-def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List[Dict]:
+def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_of_batches: int) -> List[Dict]:
+
     ensure_batch_interval(batch_idx)
     results = []
     proxy = get_proxy(batch_idx)
@@ -147,10 +161,6 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
                     source_texts, target_texts = translation[0], translation[1]
                     
                     for i, (sl, tl) in enumerate(zip(source_texts, target_texts)):
-                        logger.debug(f"{batch_msg} | sl: {sl}")
-                        logger.debug(f"{batch_msg} | tl: {tl}")
-                        logger.debug(f"{batch_msg} | merged_text: {merged_text}")
-                       
                         results.append({    
                             SL: sl.strip() if sl else "",
                             TL: tl.strip() if tl else "",
@@ -176,16 +186,14 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int) -> List
                 # Random delay between requests
                 get_random_delay(CONFIG["new_request_delay_range"])
         
-        # Random delay between batches
-
-        logger.info(f"{batch_msg} | Sleeping before next batch...")          
+        ensure_interval_before_next_batch(batch_idx, total_of_batches, batch_msg)
+                          
         translation_logger.filter_log(
             filter_func=lambda line: batch_msg in line,
             new_filename=batch_msg if error_count > 0 else f"{batch_msg}_err",
             msg=batch_msg
         )
-        get_random_delay(delay_range=CONFIG["new_batch_delay_range"], fatigue=1 + (batch_idx / (CONFIG['batch_size'] * CONFIG['max_workers'])) * 3, msg=batch_msg)
-        logger.info(f"{batch_msg} | Next batch is ready to start...")           
+              
         context.close()
         browser.close()
 
@@ -286,12 +294,12 @@ def main():
     # Split into batches
     batch_size = CONFIG["batch_size"]
     batches = [merged_list_of_tuples[i:i + batch_size] for i in range(0, len(merged_list_of_tuples), batch_size)]
-
+    total_of_batches = len(batches)
     all_results = []
 
     with ThreadPoolExecutor(max_workers=CONFIG["max_workers"]) as executor:
         futures = {
-            executor.submit(process_batch, batch, idx): idx
+            executor.submit(process_batch, batch, idx, total_of_batches): idx
             for idx, batch in enumerate(batches)
         }
 

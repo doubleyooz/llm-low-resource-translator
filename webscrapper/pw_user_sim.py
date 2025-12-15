@@ -78,10 +78,14 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
                 scroll_amount = scroll_amount if remaining > 0 else -scroll_amount
            
             # Occasionally scroll back up
-            if ((random.random() < CONFIG["scroll_back_probability"] and 
-                current_scroll > scroll_amount) or current_scroll > target_scroll):
+            if (random.random() < CONFIG["scroll_back_probability"] and 
+                current_scroll > scroll_amount) or current_scroll > target_scroll:
                 scroll_amount = -scroll_amount
             
+            # If the target_scroll is negative and scroll_amount is positive, let's invert the scroll_amount sign to shorten the distance
+            if random.random() < CONFIG["scroll_back_probability"] and  scroll_amount > 0 and 0 > target_scroll:
+                scroll_amount = -scroll_amount
+                
             perform_action(
                     lambda: page.evaluate(f"window.scrollBy(0, {scroll_amount})"),
                     f"{msg} | scrolling by {scroll_amount}px. {current_scroll:.0f}px → {target_scroll:.0f}px",

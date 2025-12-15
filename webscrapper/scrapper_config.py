@@ -1,6 +1,5 @@
 # Configuration
 CONFIG = {
-
     "page_timeout_ms": 100000,  # Page load timeout
     "scroll_delay_range": (0.1, 1.1), # Delay range for scrolling
     "interaction_delay_range": (2, 6), # Delay range for interactions
@@ -16,8 +15,8 @@ CONFIG = {
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   
     "max_scroll_iterations": 40,     # Prevent infinite scroll loops
-    "max_workers": 7,                    # Concurrent translation workers
-    "batch_size": 12,                    # Sentences per context (proxy switch)    
+    "max_workers": 9,                    # Concurrent translation workers
+    "batch_size": 15,                    # Sentences per context (proxy switch)    
     "sentences_per_request_range": (1, 1),         # Sentences per translation request
     "proxy_rotation": False,    
     

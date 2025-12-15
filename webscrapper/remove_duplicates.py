@@ -5,13 +5,15 @@ from pathlib import Path
 
 from constants.languages import OL, SL, TL
 
-CURRENT_ITERACTION = '20251207_224427'
-# CURRENT_ITERACTION = '20251208_112939'
+# CURRENT_ITERACTION = '20251212_232342'
+CURRENT_ITERACTION = '20251215_090122'
 FOLDER = f'output/translation_{SL}2{TL}_{CURRENT_ITERACTION}'
-
+# FOLDER = ''
 ORIGINAL_FILE = f"{FOLDER}/{SL}_{TL}_{OL}_parallel.json"
+# ORIGINAL_FILE = f"{FOLDER}/merged-1765814768420.json"
 CLEANED_FILE = f"{FOLDER}/unique.json"
 DUPLICATES_FILE = f"{FOLDER}/duplicates.json"
+KEY_TO_REMOVE = 'english'
 
 # We use an OrderedDict to preserve the original order while tracking seen en values
 seen_en = OrderedDict()  # value → index in the list
@@ -21,10 +23,16 @@ duplicates = []
 with open(ORIGINAL_FILE, "r", encoding="utf-8") as f:
     data = json.load(f)
 
+
+for entry in data:
+    if KEY_TO_REMOVE in entry:
+        del entry[KEY_TO_REMOVE]
+
+
 # First pass: identify duplicates
 for idx, entry in enumerate(data):
-    en_text = entry["en"].strip()  # strip in case of hidden spaces
-    br_text = entry["br"].strip()  # strip in case of hidden spaces
+    en_text = entry[SL].strip()  # strip in case of hidden spaces
+    br_text = entry[TL].strip()  # strip in case of hidden spaces
     if en_text in seen_en and br_text in seen_br:
         duplicates.append((idx, entry))
     else:
@@ -33,6 +41,7 @@ for idx, entry in enumerate(data):
 
 # Create the cleaned list (preserves original order)
 unique_data = [entry for idx, entry in enumerate(data) if idx not in {i for i, _ in duplicates}]
+
 
 # Extract only the duplicate entries (keep the first occurrence out)
 duplicate_entries = [entry for _, entry in duplicates]
