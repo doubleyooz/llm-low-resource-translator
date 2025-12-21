@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from constants.languages import SL, TL
 from constants.output import OUTPUT_FOLDER
 
 class SingletonLogger:
@@ -29,7 +28,7 @@ class SingletonLogger:
     def get_filepath(self) -> Optional[str]:
         return self._filepath
 
-    def setup_logger(self, output_folder: str = None, source_lang: str = SL, target_lang: str = TL, level= logging.INFO) -> logging.Logger:
+    def setup_logger(self, output_folder: str = None, log_filename: str = None, level= logging.INFO) -> logging.Logger:
         """
         Setup the logger with file and console handlers.
         
@@ -47,17 +46,23 @@ class SingletonLogger:
         # If no output folder specified, use current script directory
         if output_folder is None:
             script_dir = Path(__file__).parent
-            output_folder = script_dir / "output"
+            folder_name = OUTPUT_FOLDER or "output"
+            output_folder = script_dir / folder_name
         else:
             output_folder = Path(output_folder)
 
         # Ensure output folder exists
+        
         os.makedirs(output_folder, exist_ok=True)
         
-    
-        self._log_filename =  f"translation_{source_lang}2{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        
-      
+        current_date = datetime.now().strftime('%Y%m%d_%H%M%S')
+        print(log_filename)
+        if log_filename:
+            log_filename = log_filename.split('.')
+            self._log_filename = f"{log_filename[0]}_{current_date}"
+        else:
+            self._log_filename =  f"{hash(f'{current_date}_{output_folder}')}_{current_date}"
+              
 
         # Create log filename with timestamp
         self._filepath = os.path.join(
@@ -105,7 +110,7 @@ class SingletonLogger:
 
         return self.logger
 
-    def get_logger(self) -> logging.Logger:
+    def get_logger(self, output_folder: str = None, log_filename: str = None) -> logging.Logger:
         """
         Get the logger instance. Must call setup_logger() first.
         
@@ -116,7 +121,7 @@ class SingletonLogger:
             RuntimeError: If logger is not initialized
         """
         if self.logger is None:
-            self.setup_logger(level=logging.DEBUG)
+            self.setup_logger(level=logging.DEBUG, log_filename=log_filename, output_folder=output_folder)
         return self.logger
 
     def shutdown(self):
@@ -185,8 +190,8 @@ class SingletonLogger:
 
         # Log the action
         logger = self.get_logger()
-        logger.info(f"{msg} | Filtered log created: {new_log_path}")
-        logger.info(f"{msg} | Original: {total_lines} lines → Filtered: {len(filtered_lines)} lines "
+        logger.info(f"{msg} Filtered log created: {new_log_path}")
+        logger.info(f"{msg} Original: {total_lines} lines → Filtered: {len(filtered_lines)} lines "
                     f"({len(filtered_lines)/total_lines*100:.1f}% kept)")
 
         return str(new_log_path)

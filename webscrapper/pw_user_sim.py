@@ -3,11 +3,17 @@ import random
 import time
 from typing import Dict, List, Tuple, Optional
 from playwright.sync_api import sync_playwright, Page, BrowserContext, Locator
+from constants.output import OUTPUT_FOLDER, LOG_FILENAME
 from scrapper_config import CONFIG
 
 from logger import translation_logger
 
-logger = translation_logger.get_logger()
+
+logger = translation_logger.get_logger(
+    output_folder=OUTPUT_FOLDER,
+    log_filename=LOG_FILENAME
+)
+
 
 def set_fatigue(fatigue: float = 1):
     return max(1.0, fatigue)
@@ -18,21 +24,23 @@ def get_random_delay(delay_range: Tuple[float, float] = None, fatigue: float = 1
         delay_range = CONFIG["interaction_delay_range"]
     delay = random.uniform(*delay_range) * set_fatigue(fatigue)
     if fatigue > 1:
-        logger.info(f"{msg} | Sleeping {delay:.1f}s (fatigue mode)") 
+        logger.info(f"{msg} Sleeping {delay:.1f}s (fatigue mode)") 
 
     time.sleep(delay)
     
    
 
 def perform_action(action: callable, description: str, delay_range: Tuple[float, float] = CONFIG["interaction_delay_range"], 
-        raise_exception: bool = False) -> bool:
+        raise_exception: bool = False, msg: str = '') -> bool:
+    if msg:        
+        description = description.removeprefix(msg)
     try:
         action()
-        logger.debug(f"Action '{description}' performed successfully.")
+        logger.debug(f"{msg} Action '{description}' performed successfully.")
         get_random_delay(delay_range)
         return True
     except Exception as e:
-        logger.warning(f"Action '{description}' failed: {e}")
+        logger.warning(f"{msg} Action '{description}' failed: {e}")
         if raise_exception:
             raise
         return False
@@ -46,7 +54,7 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
         max_scroll = max(0, scroll_height - viewport_height)
         
         if max_scroll < 100:
-            logger.debug(f"{msg} | No scrollable content")
+            logger.debug(f"{msg} No scrollable content")
             return
         
         # Determine target scroll position (as percentage of max scroll)
@@ -58,61 +66,65 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
         iterations = 0
         max_iterations = CONFIG.get("max_scroll_iterations", 50)
         
-        logger.debug(f"{msg} | Entering scrolling loop")
+        logger.debug(f"{msg} Entering scrolling loop")
         
         while (abs(current_scroll - target_scroll) > 100 and iterations < max_iterations):
                  
+            # Calculate remaining distance
+            remaining = target_scroll - current_scroll       
+                 
+            upper_bound = int(max(300, remaining / 3))
+            
             # Determine scroll amount (don't overshoot)
-            scroll_pixel_range = CONFIG.get("scroll_pixel_range", (100, 300))
-            scroll_amount = random.randint(*scroll_pixel_range)
+            scroll_amount = random.randint(100, upper_bound)
             
           
-            # Calculate remaining distance
-            remaining = target_scroll - current_scroll
-       
-            logger.debug(f"{msg} | Remaining scroll: {remaining:.0f}px, initial scroll amount: {scroll_amount}px")
+         
+            logger.debug(f"{msg} Remaining scroll: {remaining:.0f}px, initial scroll amount: {scroll_amount}px")
             # If we're close to target, reduce scroll amount
             if abs(remaining) < scroll_amount:
                 scroll_amount = int((abs(remaining) * 0.8) * (1 if remaining > 0 else -1))
             else:
                 scroll_amount = scroll_amount if remaining > 0 else -scroll_amount
            
-            # Occasionally scroll back up
+            # Occasionally scroll back on the opposite direction
             if (random.random() < CONFIG["scroll_back_probability"] and 
                 current_scroll > scroll_amount) or current_scroll > target_scroll:
                 scroll_amount = -scroll_amount
             
             # If the target_scroll is negative and scroll_amount is positive, let's invert the scroll_amount sign to shorten the distance
-            if random.random() < CONFIG["scroll_back_probability"] and  scroll_amount > 0 and 0 > target_scroll:
+            elif scroll_amount > 0 and 0 > target_scroll:
                 scroll_amount = -scroll_amount
                 
             perform_action(
-                    lambda: page.evaluate(f"window.scrollBy(0, {scroll_amount})"),
-                    f"{msg} | scrolling by {scroll_amount}px. {current_scroll:.0f}px → {target_scroll:.0f}px",
-                    CONFIG["scroll_delay_range"]
+                    action=lambda: page.evaluate(f"window.scrollBy(0, {scroll_amount})"),
+                    description=f"scrolling by {scroll_amount}px. {current_scroll:.0f}px → {target_scroll:.0f}px",
+                    delay_range=CONFIG["scroll_delay_range"],
+                    msg=msg
                 )
             current_scroll += scroll_amount
 
             iterations += 1
             
-            logger.debug(f"{msg} | Scroll iteration {iterations}: {current_scroll:.0f}px")
+            logger.debug(f"{msg} Scroll iteration {iterations}: {current_scroll:.0f}px")
             
             # Random mouse movements during scrolling
             _random_mouse_movement(page, msg)
-        logger.debug(f"{msg} | Finishing simulating scrolling...")        
+        logger.debug(f"{msg} Finishing simulating scrolling...")        
     except Exception as e:
         logger.debug(f"{msg} Scrolling simulation failed: {e}")
 
 def _random_mouse_movement(page: Page, msg: str = "") -> None:
     """Perform random mouse movement within viewport."""
     perform_action(
-        lambda: page.mouse.move(
+        action=lambda: page.mouse.move(
             random.randint(*CONFIG["mouse_move_range_x"]),
             random.randint(*CONFIG["mouse_move_range_y"]),
             steps=random.randint(5, 15)
         ),
-        f"{msg} | random mouse movement",
-        CONFIG["scroll_delay_range"]
+        description=f"random mouse movement",
+        delay_range=CONFIG["scroll_delay_range"],
+        msg=msg
     )
     
 
@@ -121,10 +133,10 @@ def _click_element(element: Locator, msg: str = "", hover: bool = False, raise_e
         try:
             if isinstance(element, list):
                 if len(element) == 0:
-                    logger.warning(f"{msg} | Empty element list provided")
+                    logger.warning(f"{msg} Empty element list provided")
                     raise ValueError("Empty element list")
                 element = element[0]  # Use first element from list
-                logger.debug(f"{msg} | Using first element from list ({len(element)} elements total)")
+                logger.debug(f"{msg} Using first element from list ({len(element)} elements total)")
 
                 
             element_description = (
@@ -135,20 +147,22 @@ def _click_element(element: Locator, msg: str = "", hover: bool = False, raise_e
             
             if hover:
                 perform_action(
-                    lambda: element.hover(),
-                    f"{msg} | hover: {element_description}",
-                    CONFIG["scroll_delay_range"],
-                    raise_exception
+                    action=lambda: element.hover(),
+                    description=f"hover: {element_description}",
+                    delay_range=CONFIG["scroll_delay_range"],
+                    raise_exception=raise_exception,
+                    msg=msg
                 )
             
             return perform_action(
-                lambda: element.click(delay=random.uniform(100, 300)),
-                f"{msg} | click: {element_description}",
-                CONFIG["button_delay_range"],
-                raise_exception
+                action=lambda: element.click(delay=random.uniform(100, 300)),
+                description=f"click: {element_description}",
+                delay_range=CONFIG["button_delay_range"],
+                raise_exception=raise_exception,
+                msg=msg
             )
         except Exception as e:
-            logger.warning(f"{msg} | Click failed: {e}")
+            logger.warning(f"{msg} Click failed: {e}")
             if raise_exception:
                 raise e
             return False
@@ -157,27 +171,28 @@ def _click_element(element: Locator, msg: str = "", hover: bool = False, raise_e
 def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int = 1, button_click_probability: float = CONFIG["button_click_probability"], msg: str = "") -> None:
     # Light human simulation: scroll + mouse move.
     try:
-        logger.debug(f"{msg} | Simulating human behaviour...")
+        logger.debug(f"{msg} Simulating human behaviour...")
         _simulate_scrolling(page, msg)
               
         for _ in range(number_of_clicks):
             
             # Random mouse wandering (very important for anti-bot)
             if(random.random() < button_click_probability / 2):
-                logger.debug(f"{msg} | Preparing wandering before click...")
+                logger.debug(f"{msg} Preparing wandering before click...")
                 for _ in range(random.randint(1,3)):
                     perform_action(
-                        lambda: page.mouse.move(
+                        action=lambda: page.mouse.move(
                             random.randint(*CONFIG["mouse_move_range_x"]),
                             random.randint(*CONFIG["mouse_move_range_y"]),
                             steps=random.randint(15, 30)
                         ),
-                        f"{msg} | mouse wander"
+                        description="mouse wander",
+                        msg=msg
                     )
                 
             # Randomly decide whether to click (20% chance per page visit)
             if random.random() <= button_click_probability:
-                logger.debug(f"{msg} | Simulating random button click...")
+                logger.debug(f"{msg} Simulating random button click...")
                 # Filter only visible & enabled buttons
                 clickable = []
                 for sel in selectors:
@@ -195,13 +210,14 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
                         box = target_button.bounding_box()
                         if box:
                             perform_action(        
-                                lambda: page.mouse.move(
+                                action=lambda: page.mouse.move(
                                     box["x"] + box["width"] / 2 + random.randint(-10, 10),
                                     box["y"] + box["height"] / 2 + random.randint(-10, 10),
                                     steps=random.randint(12, 22)
                                 ),
-                                f"{msg} | hover before click",
-                                CONFIG["scroll_delay_range"]
+                                description="hover before click",
+                                delay_range=CONFIG["scroll_delay_range"],
+                                msg=msg
                             )
                         
                     except:
@@ -209,11 +225,11 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
                     
                     _click_element(target_button, msg)      
                 else:
-                    logger.debug(f"{msg} | No clickable elements found for selectors: {selectors}")        
+                    logger.debug(f"{msg} No clickable elements found for selectors: {selectors}")        
 
               
     except Exception as e:
-        logger.debug(f"{msg} | Human sim failed: {e}")
+        logger.debug(f"{msg} Human sim failed: {e}")
     finally:
         # Small pause after interaction
         get_random_delay(CONFIG["interaction_delay_range"])

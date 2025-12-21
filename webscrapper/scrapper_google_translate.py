@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright, Page, BrowserContext
 from urllib.parse import urlparse, parse_qs
 
 from constants.languages import SL, TL
-from constants.output import OUTPUT_FOLDER
+from constants.output import LOG_FILENAME, OUTPUT_FOLDER
 from scrapper_config import CONFIG
 from pw_user_sim import _click_element, get_random_delay, perform_action, simulate_human
 # Import the singleton logger
@@ -38,6 +38,13 @@ DOUBLE_CLICK_SELECTORS = [
 
 INPUT_TEXTAREA_SELECTOR = "textarea[aria-label='Source text']"
 
+
+logger = translation_logger.get_logger(
+    output_folder=OUTPUT_FOLDER,
+    log_filename=LOG_FILENAME
+)
+
+
 def get_url (sl, tl):
     n = random.randint(1, 3)
     if n == 1:
@@ -47,10 +54,9 @@ def get_url (sl, tl):
     else:
         return f"https://translate.google.co.uk/?sl={sl}&tl={tl}&op=translate"
 
-# -------------------------------
+
 # Translation Core
-# -------------------------------
-def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: logging.Logger) -> str:
+def translate_sentence(page: Page, sentence: str, batch_idx: int) -> str:
     """Translate one sentence using Google Translate."""
     batch_msg = f"Batch {batch_idx}" 
     
@@ -69,82 +75,77 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
         final_sl=SL,
         final_tl=TL,
         batch_msg=batch_msg,
-        _logger=logger
     )
     
-    set_input(page, sentence, msg=batch_msg, logger=logger)
+    set_input(page, sentence, msg=batch_msg)
    
-    logger.debug(f"{batch_msg} | Translating: [{current_query_params.get('sl')[0]} → {current_query_params.get('tl')[0]}] {sentence}...")
+    logger.debug(f"{batch_msg} Translating: [{current_query_params.get('sl')[0]} → {current_query_params.get('tl')[0]}] {sentence}...")
     
-    output = get_output(logger=logger, page=page, msg=batch_msg)
+    output = get_output(page=page, msg=batch_msg)
     
     if output != sentence:
-        logger.debug(f"{batch_msg} | Translated: {sentence[:30]}... → {output}...")
-        stealthInteractionRoutine(page, batch_idx)
+        logger.debug(f"{batch_msg} Translated: {sentence[:30]}... → {output}...")
+        stealthInteractionRoutine(page, batch_msg)
         return output
     else:
-        logger.info(f"{batch_msg} | {current_query_params}")
-        logger.info(f"{batch_msg} | {SL} -> {TL}")
+        logger.info(f"{batch_msg} {current_query_params}")
+        logger.info(f"{batch_msg} {SL} -> {TL}")
         if current_query_params.get('sl')[0] == SL and current_query_params.get('tl')[0] == TL:
-            logger.warning(f"{batch_msg} | Clicking on swap languages {DOUBLE_CLICK_SELECTORS[0]} for backtranslation...")
+            logger.warning(f"{batch_msg} Clicking on swap languages {DOUBLE_CLICK_SELECTORS[0]} for backtranslation...")
             try:                
                 _click_element(page.locator(DOUBLE_CLICK_SELECTORS[0]).first, msg=batch_msg, raise_exception=True)
             except Exception as e:
                 try:
                     new_locator = DOUBLE_CLICK_SELECTORS[0].replace("Cmd", "Ctrl")
-                    logger.debug(f"{batch_msg} | Retry clicking swap languages button with {new_locator}...")
+                    logger.debug(f"{batch_msg} Retry clicking swap languages button with {new_locator}...")
                     _click_element(page.locator(new_locator).first, msg=batch_msg, raise_exception=True)
                    
                 except Exception as e2:
-                    logger.error(f"{batch_msg} | Failed to click swap languages button.")
-                    page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Failed to click swap languages button {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                    logger.error(f"{batch_msg} Failed to click swap languages button.")
+                    page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} Failed to click swap languages button {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                     raise e
                 
-            output = get_output(logger=logger, page=page, msg=batch_msg)
+            output = get_output(page=page, msg=batch_msg)
 
             if output == sentence:
                   
                 current_query_params = get_current_query_params(page.url)
                 if current_query_params.get('sl')[0]== TL and current_query_params.get('tl')[0] == SL:
-                    page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Backtranslation failed, output matches input.. {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-                    logger.error(f"{batch_msg} | Backtranslation failed, output matches input.")
-                    logger.debug(f"{batch_msg} | Attempting to reload in order to get the translation...")
+                    page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} Backtranslation failed, output matches input.. {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                    logger.error(f"{batch_msg} Backtranslation failed, output matches input.")
+                    logger.debug(f"{batch_msg} Attempting to reload in order to get the translation...")
                     page.reload()
-                    output = get_output(logger=logger, page=page, msg=batch_msg)
+                    output = get_output(page=page, msg=batch_msg)
 
                     if output == sentence:
-                        logger.error(f"{batch_msg} | Backtranslation failed again after reload, output matches input.")
-                        page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Backtranslation failed again after reload, output matches input.. {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                        logger.error(f"{batch_msg} Backtranslation failed again after reload, output matches input.")
+                        page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} Backtranslation failed again after reload, output matches input.. {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                     else:
-                        logger.warning(f"{batch_msg} | Backtranslation succeeded after reload. Output: {output[:50]}...")
-                        stealthInteractionRoutine(page, batch_idx)
+                        logger.warning(f"{batch_msg} Backtranslation succeeded after reload. Output: {output[:50]}...")
+                        stealthInteractionRoutine(page, batch_msg)
                         return f"[TRANSLATION BACK FROM {TL}] - {output}"
                 else:
-                    logger.error(f"{batch_msg} | Backtranslation failed, failed to properly swap languages.")
-                    page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Backtranslation failed, failed to properly swap languages. {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-                    raise ValueError(f"{batch_msg} | Failed to properly swap languages.")
+                    logger.error(f"{batch_msg} Backtranslation failed, failed to properly swap languages.")
+                    page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} Backtranslation failed, failed to properly swap languages. {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                    raise ValueError(f"{batch_msg} Failed to properly swap languages.")
              
                
-            logger.warning(f"{batch_msg} | Translated back from {TL}: {sentence[:50]}...")
-            stealthInteractionRoutine(page, batch_idx)
+            logger.warning(f"{batch_msg} Translated back from {TL}: {sentence[:50]}...")
+            stealthInteractionRoutine(page, batch_msg)
             return f"[TRANSLATION BACK FROM {TL}] - {output}"
-        raise ValueError(f"{batch_msg} | Can't perform backtranslation [{SL}] -> [{TL}] for sentence: {sentence[:50]}...")
+        raise ValueError(f"{batch_msg} Can't perform backtranslation [{SL}] -> [{TL}] for sentence: {sentence[:50]}...")
 
 def _click_language_option(page: Page, language_code: str, _language_list: Locator, batch_msg: str = ''):
-    """Helper function to click language option with fallback"""
-
-    _logger = translation_logger.get_logger()
-    
+    """Helper function to click language option with fallback"""  
     # Selector priorities
-
     try:
         menu_state = _language_list.get_attribute('aria-expanded')
         if menu_state != 'true':
-            _logger.debug(f"{batch_msg} | Opening language menu")
+            logger.debug(f"{batch_msg} Opening language menu")
             _click_element(_language_list, msg=batch_msg, hover=True)
         
         
-        _logger.debug(f"{batch_msg} | Searching for language options...")
+        logger.debug(f"{batch_msg} Searching for language options...")
         groups = page.locator('div[role="group"]')
         options = groups.locator('div[role="option"]')
 
@@ -159,70 +160,69 @@ def _click_language_option(page: Page, language_code: str, _language_list: Locat
             
             if option_lang_code == language_code and option.is_visible():
                 found_element = option
-                _logger.debug(f"{batch_msg} | Attempting with selector: {found_element.get_attribute('data-language-code')} at index {i}...")
+                logger.debug(f"{batch_msg} Attempting with selector: {found_element.get_attribute('data-language-code')} at index {i}...")
                 try:     
                     if success:
                         break    
                     menu_state = _language_list.get_attribute('aria-expanded')
                     if menu_state != 'true':
                         page.screenshot(path=f"output/screenshoot_{batch_msg}_closed_{_language_list.get_attribute('aria-label')}_menu_{language_code}_{i}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-                        _logger.warning(f"{batch_msg} | Taking screenshot before trying to open the {_language_list.get_attribute('aria-label')} menu {language_code} at index {i}...")
-                        _logger.debug(f"{batch_msg} | Opening language menu")
+                        logger.warning(f"{batch_msg} Taking screenshot before trying to open the {_language_list.get_attribute('aria-label')} menu {language_code} at index {i}...")
+                        logger.debug(f"{batch_msg} Opening language menu")
                         _click_element(_language_list, msg=batch_msg, hover=True)
                     # page.screenshot(path=f"output/screenshoot_{batch_msg}_opened_{_language_list.get_attribute('aria-label')}_menu_{language_code}_{i}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-                    # _logger.warning(f"{batch_msg} | Taking screenshot before clicking language option {language_code} at index {i}...")
-                    _logger.debug(f"{batch_msg} | {_language_list.get_attribute('aria-label')} Menu is visible: {_language_list.is_visible()}, Option is visible: {found_element.is_visible()}")
+                    # logger.warning(f"{batch_msg} Taking screenshot before clicking language option {language_code} at index {i}...")
+                    logger.debug(f"{batch_msg} {_language_list.get_attribute('aria-label')} Menu is visible: {_language_list.is_visible()}, Option is visible: {found_element.is_visible()}")
                     success = _click_element(element=found_element, msg=batch_msg, hover=True, raise_exception=True)
                 except Exception as e:
-                    _logger.debug(f"{batch_msg} | Selector failed: {e}")
+                    logger.debug(f"{batch_msg} Selector failed: {e}")
                     continue
                 break       
             
         if found_element is None:
-            _logger.debug(f"{batch_msg} | No selector found for {language_code}")
+            logger.debug(f"{batch_msg} No selector found for {language_code}")
             raise Exception(f"No selector found for {language_code}. Language list failed to open: {_language_list.get_attribute('aria-label')} Menu is visible: {_language_list.is_visible()}")    
      
         if not success:
-            _logger.debug(f"{batch_msg} | No working selector found for {language_code}")
+            logger.debug(f"{batch_msg} No working selector found for {language_code}")
             raise Exception(f"No working selector found for {language_code}")      
               
         # Verify menu closed
         page.wait_for_timeout(500)
         final_state = _language_list.get_attribute('aria-expanded')
         if final_state == 'true':
-            _logger.warning(f"{batch_msg} | Menu didn't close automatically, closing manually")
+            logger.warning(f"{batch_msg} Menu didn't close automatically, closing manually")
             _click_element(_language_list, msg=batch_msg, hover=True)
     
     except Exception as e:
-        _logger.error(f"{batch_msg} | Language selection failed for {language_code}: {e}")
-        page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | {e} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+        logger.error(f"{batch_msg} Language selection failed for {language_code}: {e}")
+        page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} {e} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
         
         raise e
 
 def _reset_languages(page: Page, language: str, is_source_language: bool = True, batch_msg: str = '') -> Dict[str, Any]:
     if type(language) is list:
         language = language[0]
-    _logger = translation_logger.get_logger()
     selector = DOUBLE_CLICK_SELECTORS[1] if is_source_language else DOUBLE_CLICK_SELECTORS[2]
   
-    _logger.debug(f"{batch_msg} | {selector} Resetting {'source' if is_source_language else 'target'} language to {language}...")
+    logger.debug(f"{batch_msg} {selector} Resetting {'source' if is_source_language else 'target'} language to {language}...")
     _click_language_option(page, language, page.locator(selector).first, batch_msg=batch_msg)
 
     
     return get_current_query_params(page.url)
             
-def set_input(page: Page, sentence: str, msg: str = '', logger: logging.Logger = None) -> None:
+def set_input(page: Page, sentence: str, msg: str = '') -> None:
     # ensure menus are closed
     for selector in DOUBLE_CLICK_SELECTORS[1:]:          
         menu = page.locator(selector).first
         menu_state = menu.get_attribute('aria-expanded')
         if menu_state == 'true':
-            logger.debug(f"{msg} | Ensuring menu {menu.get_attribute('aria-label')} is closed...")
+            logger.debug(f"{msg} Ensuring menu {menu.get_attribute('aria-label')} is closed...")
             _click_element(menu, msg=msg, hover=True)
         
    
-    perform_action(lambda: page.wait_for_selector(INPUT_TEXTAREA_SELECTOR, timeout=20000), f"{msg} | wait result")
-    perform_action(lambda:  page.fill(INPUT_TEXTAREA_SELECTOR, sentence), f"{msg} | type in text to be translated")
+    perform_action(lambda: page.wait_for_selector(INPUT_TEXTAREA_SELECTOR, timeout=20000), f"{msg} wait result")
+    perform_action(lambda:  page.fill(INPUT_TEXTAREA_SELECTOR, sentence), f"{msg} type in text to be translated")
        
     textbox = page.wait_for_selector(INPUT_TEXTAREA_SELECTOR)
   
@@ -231,40 +231,38 @@ def set_input(page: Page, sentence: str, msg: str = '', logger: logging.Logger =
     while final_text != sentence and attempts < 3:
         # clear textbox
         _click_element(page.locator(UNSAFE_CLICK_SELECTORS[0]).first, msg=msg)
-        perform_action(lambda:  page.fill(INPUT_TEXTAREA_SELECTOR, sentence), f"{msg} | type in text to be translated")
+        perform_action(lambda:  page.fill(INPUT_TEXTAREA_SELECTOR, sentence), f"{msg} type in text to be translated")
         final_text = textbox.input_value()
         attempts += 1
     if final_text != sentence:
-        raise ValueError(f"{msg} | Failed to set input text after {attempts} attempts.")
+        raise ValueError(f"{msg} Failed to set input text after {attempts} attempts.")
     
-def get_output(page: Page, logger: logging.Logger, msg: str = '') -> str:
+def get_output(page: Page, msg: str = '') -> str:
     result = page.locator("span[jsname='jqKxS']").first
     
     output = result.inner_text()
     
     while not output:
-        logger.debug(f"{msg} | Waiting for translation result...")
-        perform_action(lambda: page.wait_for_timeout(500), f"{msg} | wait for translation")
+        logger.debug(f"{msg} Waiting for translation result...")
+        perform_action(lambda: page.wait_for_timeout(500), f"{msg} wait for translation")
         output = result.inner_text()
-    logger.debug(f"{msg} | Obtained translation output: {output}...")
+    logger.debug(f"{msg} Obtained translation output: {output}...")
     return output
     
   
-def stealthInteractionRoutine(page: Page, batch_idx: int) -> None:
-    batch_msg = f"Batch {batch_idx}"
-    _logger = translation_logger.get_logger()
+def stealthInteractionRoutine(page: Page, msg: str = "") -> None:
     # light scroll to trigger lazy load
     if random.random() < CONFIG["safe_button_click_probability"]:
-        simulate_human(page=page, selectors=SAFE_CLICK_SELECTORS, msg=batch_msg)
+        simulate_human(page=page, selectors=SAFE_CLICK_SELECTORS, msg=msg)
         
     if random.random() < CONFIG["double_button_click_probability"]:          
-            _logger.warning(f"{batch_msg} | Using unsafe double click selectors...")
-            simulate_human(page=page, selectors=DOUBLE_CLICK_SELECTORS, number_of_clicks=2, button_click_probability=1, msg=batch_msg)
-            _logger.warning(f"{batch_msg} | Finished using unsafe double click selectors...")
+            logger.warning(f"{msg} Using unsafe double click selectors...")
+            simulate_human(page=page, selectors=DOUBLE_CLICK_SELECTORS, number_of_clicks=2, button_click_probability=1, msg=msg)
+            logger.warning(f"{msg} Finished using unsafe double click selectors...")
     elif random.random() < CONFIG["unsafe_button_click_probability"]:
-            _logger.warning(f"{batch_msg} | Using unsafe selectors...")
-            simulate_human(page=page, selectors=UNSAFE_CLICK_SELECTORS, msg=batch_msg)
-            _logger.warning(f"{batch_msg} | Finished using unsafe selectors...")
+            logger.warning(f"{msg} Using unsafe selectors...")
+            simulate_human(page=page, selectors=UNSAFE_CLICK_SELECTORS, msg=msg)
+            logger.warning(f"{msg} Finished using unsafe selectors...")
     final_query_params = get_current_query_params(page.url)
         
     ensure_language_parameters_stability(
@@ -273,10 +271,9 @@ def stealthInteractionRoutine(page: Page, batch_idx: int) -> None:
         current_tl=final_query_params.get('tl'),
         final_sl=SL,
         final_tl=TL,
-        batch_msg=batch_msg,
-        _logger=_logger
+        batch_msg=msg,
     )
-    _logger.debug(f"{batch_msg} | Stealth routine completed...")
+    logger.debug(f"{msg} Stealth routine completed...")
 
 def get_current_query_params(url: str) -> Dict[str, Any]:
     return parse_qs(urlparse(url).query)
@@ -288,7 +285,6 @@ def ensure_language_parameters_stability(
     final_sl: str, # this must be the correct source language
     final_tl: str,  # this must be the correct target language
     batch_msg: str,
-    _logger
 ) -> dict:
     if type(current_sl) is list:
         current_sl = current_sl[0]
@@ -302,10 +298,10 @@ def ensure_language_parameters_stability(
 
     while current_sl != final_sl:
         final_query_params = _reset_languages(page= page, language=final_sl, is_source_language=True, batch_msg=batch_msg)
-        _logger.warning(f"{batch_msg} | Source language mismatch: {current_sl} → {final_sl}. Resetting...")
+        logger.warning(f"{batch_msg} Source language mismatch: {current_sl} → {final_sl}. Resetting...")
         current_sl = final_query_params['sl'][0]
     while current_tl != final_tl:        
-        _logger.warning(f"{batch_msg} | Target language mismatch: {current_tl} → {final_tl}. Resetting...")
+        logger.warning(f"{batch_msg} Target language mismatch: {current_tl} → {final_tl}. Resetting...")
         final_query_params = _reset_languages(page=page, language=final_tl, is_source_language=False, batch_msg=batch_msg)
         current_tl = final_query_params['tl'][0]
     return {

@@ -1,4 +1,5 @@
 import logging
+import random
 import requests
 from typing import Dict, List, Tuple, Optional
 
@@ -39,7 +40,7 @@ def load_fresh_proxies() -> List[Dict]:
 # Load proxies once at startup
 PROXIES = load_fresh_proxies()
 
-def get_proxy(batch_idx: int) -> Optional[Dict]:
+def get_proxy() -> Optional[Dict]:
     if not CONFIG["proxy_rotation"] or not PROXIES:
         return None
-    return PROXIES[batch_idx % len(PROXIES)]
+    return PROXIES[random.randint(0, len(PROXIES))]

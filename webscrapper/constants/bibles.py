@@ -102,7 +102,7 @@ ABK: VersionInfo = {
 BCNDA: VersionInfo = {
     'text': "bcnda",
     "suffix": "BCNDA",
-    'id': 4114,
+    'id': 4523,
     "language": "Welsh",
     "name": "Beibl Cymraeg Newydd Diwygiedig yn cynnwys yr Apocryffa 2008",
     "file": f'{BIBLE}_bcnda.txt',
@@ -136,6 +136,17 @@ NIV: VersionInfo = {
     "apocrypha": False,
 }
 
+BCC1923: VersionInfo = {
+    'text': "bcc1923",
+    'suffix': "BCC1923",
+    'id': 504,
+    "language": "French",
+    "name": "Bible Catholique Crampon 1923",
+    "file": f'{BIBLE}_bcc1923.txt',
+    "apocrypha": True,
+}
+
+
 def get_random_version() -> VersionInfo:
     """Selects and returns a random version from the VERSIONS list."""
     return random.choice(VERSIONS)
@@ -144,5 +155,6 @@ VERSIONS = [
     KOAD21,
     BCNDA,
     ABK,
-    NIV
+    NIV,
+    BCC1923,
 ]

@@ -16,39 +16,45 @@ from pw_user_sim import _click_element, get_random_delay, perform_action, simula
 from logger import translation_logger
 
 wordbank =   [
-"television", "screen", "remote", "channel", "movie", "actor", "actress", "director", "scene", "script",
-"radio", "news", "reporter", "camera", "lens", "flash", "film", "roll", "studio", "stage",
-"ticket", "seat", "audience", "crowd", "applause", "curtain", "costume", "mask", "mirror", "shadow",
-"river", "lake", "ocean", "island", "forest", "desert", "valley", "peak", "cliff", "cave",
-"farm", "field", "crop", "harvest", "barn", "tractor", "tool", "hammer", "nail", "screw",
-"building", "tower", "bridge", "tunnel", "station", "platform", "track", "signal", "bell", "whistle",
-
-"computer", "keyboard", "mouse", "monitor", "printer", "internet", "website", "email", "password", "account",
-"phone", "call", "text", "app", "battery", "charger", "cable", "headphones", "speaker", "microphone",
-"calendar", "date", "event", "reminder", "note", "list", "task", "project", "deadline", "meeting",
-"email", "folder", "file", "document", "spreadsheet", "presentation", "slide", "chart", "graph", "data",
-"network", "server", "cloud", "storage", "backup", "virus", "software", "program", "code", "bug",
-"window", "door", "key", "lock", "handle", "knob", "switch", "button", "lever", "dial",
-"fan", "air", "heat", "thermostat", "fridge", "oven", "microwave", "toaster", "kettle", "pan",
-"pot", "lid", "sink", "tap", "soap", "towel", "brush", "comb", "mirror", "razor",
-"toothbrush", "paste", "shower", "bath", "tub", "curtain", "mat", "rug", "carpet", "tile",
-"pillow", "blanket", "sheet", "mattress", "frame", "drawer", "shelf", "closet", "hanger", "laundry",
-"basket", "iron", "board", "detergent", "fabric", "thread", "needle", "button", "zipper", "belt",
-"umbrella", "raincoat", "boots", "socks", "gloves", "scarf", "cap", "sunglasses", "backpack", "suitcase",
-"luggage", "passport", "visa", "flight", "hotel", "room", "keycard", "lobby", "elevator", "stairs",
-"pool", "gym", "exercise", "weight", "machine", "treadmill", "bicycle", "helmet", "gloves", "pad",
-
-"run", "walk", "jump", "swim", "fly", "drive", "ride", "cook", "eat", "drink", "death", "sadness",
-"read", "write", "speak", "listen", "watch", "see", "hear", "touch", "feel", "smell",
-"think", "know", "believe", "understand", "remember", "forget", "learn", "teach", "study", "work",
-"play", "dance", "sing", "laugh", "cry", "shout", "whisper", "sleep", "wake", "dream",
-"build", "break", "fix", "clean", "wash", "paint", "draw", "cut", "open", "close"
-
-
+    "accept", "refuse", "offer", "decline", "choose", "pick", "select", "avoid", "ignore", "notice",
+    "observe", "examine", "check", "inspect", "measure", "count", "calculate", "estimate", "guess", "predict",
+    "plan", "organize", "prepare", "arrange", "schedule", "cancel", "postpone", "delay", "advance", "move",
+    "transfer", "shift", "replace", "remove", "add", "subtract", "multiply", "divide", "share", "split",
+    "join", "connect", "attach", "detach", "fasten", "tie", "untie", "wrap", "unwrap", "pack",
+    "unpack", "load", "unload", "ship", "deliver", "order", "request", "demand", "beg", "plead",
+    "persuade", "convince", "encourage", "discourage", "motivate", "inspire", "comfort", "console", "cheer", "celebrate",
+    "mourn", "grieve", "regret", "elder", "blame", "accuse", "defend", "protect", "attack", "fight", "surrender",
+    "win", "lose", "compete", "race", "bet", "gamble", "risk", "dare", "challenge", "provoke",
+    "calm", "relax", "tense", "excite", "bore", "amuse", "entertain", "surprise", "shock", "disappoint",
+    "impress", "attract", "repel", "charm", "flirt", "date", "marry", "divorce", "separate", "reunite",
+    "gather", "scatter", "collect", "jet", "distribute", "spread", "cover", "uncover", "reveal", "hide", "seek",
+    "discover", "invent", "create", "destroy", "repair", "damage", "hurt", "heal", "cure", "treat",
+    "diagnose", "operate", "inject", "prescribe", "swallow", "chew", "bite", "taste", "sip", "gulp",
+    "pour", "fill", "empty", "mix", "stir", "bake", "fry", "boil", "grill", "roast",
+    "slice", "chop", "peel", "grate", "blend", "freeze", "thaw", "preserve", "spoil", "waste",
+    "recycle", "reuse", "reduce", "consume", "produce", "manufacture", "assemble", "disassemble", "test", "experiment",
+    "research", "analyze", "compare", "contrast", "evaluate", "judge", "decide", "vote", "elect", "appoint",
+    "resign", "retire", "promote", "demote", "hire", "fire", "train", "coach", "guide", "direct",
+    "instruct", "demonstrate", "perform", "act", "rehearse", "record", "edit", "publish", "broadcast", "stream",
+    "download", "upload", "click", "type", "scroll", "zoom", "refresh", "save", "delete", "block",
+    "report", "complain", "praise", "criticize", "review", "rate", "comment", "reply", "forward", "quote",
+    "ask", "tell", "say", "talk", "call", "answer", "explain", "describe", "discuss", "argue",
+    "agree", "disagree", "promise", "lie", "jew", "admit", "deny", "suggest", "recommend", "advise",
+    "warn", "remind", "invite", "tank", "thank", "apologize", "forgive", "compliment", "insult", "joke", "tease",
+    "buy", "sell", "pay", "spend", "save", "borrow", "lend", "steal", "find", "lose",
+    "give", "take", "receive", "send", "bring", "carry", "hold", "drop", "throw", "catch",
+    "push", "pull", "lift", "turn", "twist", "bend", "stretch", "shake", "wave", "clap",
+    "kick", "hit", "punch", "bite", "scratch", "hug", "kiss", "stroke", "pat", "rub",
+    "wait", "hurry", "rush", "arrive", "leave", "enter", "exit", "follow", "lead", "chase",
+    "hide", "search", "look", "stare", "glance", "blink", "nod", "shake", "point", "gesture",
+    "sit", "stand", "lie", "kneel", "crouch", "lean", "climb", "fall", "rise", "hang",
+    "start", "stop", "begin", "end", "continue", "pause", "repeat", "try", "succeed", "fail"
 
 
 
 ]
+
+
 
     
 SAFE_CLICK_SELECTORS = [   
