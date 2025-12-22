@@ -4,7 +4,7 @@ import time
 
 
 from constants.output import LOG_FILENAME, OUTPUT_FOLDER
-from pw_user_sim import get_random_delay
+from utils.pw_helper import get_random_delay
 from scrapper_config import CONFIG
 from logger import translation_logger
 

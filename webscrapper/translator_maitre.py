@@ -4,7 +4,6 @@ import os
 import random
 
 from playwright.sync_api import sync_playwright
-from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Tuple, Optional
 
@@ -15,11 +14,13 @@ from pw_context import get_new_context
 from scrapper_config import CONFIG
 from scrapper_korpus_kernewek import get_url, translate_sentence
 from scrapper_korpus_kernewek import wordbank
-from pw_user_sim import get_random_delay, perform_action
+
 from logger import translation_logger
 from utils.batch_handling import BatchScheduler
 from utils.csv_helper import save_batch_to_csv
 from utils.json_helper import save_batch_to_json
+from utils.pw_helper import take_screenshot, get_random_delay, perform_action
+from utils.txt_helper import clean_text
 '''
 Translator using Google Translate via Playwright.
 Translates sentences from a Parquet dataset and saves results in CSV and JSON formats.
@@ -49,8 +50,7 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
    
 
     with sync_playwright() as p:
-        useProxy = false
-        browser, context = get_new_context(p, True)
+        browser, context = get_new_context(playwright=p, headless=True, msg_prefix=batch_msg)
         page = context.new_page()
         
         page.add_init_script("""
@@ -61,7 +61,7 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
         """)        
         
      
-        logger.info(f"{batch_msg} Proxy: {proxy['server'] if proxy else 'None'} {len(sentence_pairs)} sentences")
+        logger.info(f"{batch_msg} {len(sentence_pairs)} sentences")
         perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), f"{batch_msg} goto")
         
         sentences_per_request = random.randint(*CONFIG["sentences_per_request_range"])
@@ -74,8 +74,10 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
             
             try:
                 if error_count >= 5:
-                    logger.error(f"{batch_msg} Too many errors, adding pause.")
-                    page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} Too many errors, adding pause {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                    error_msg = "Too many errors, adding pause..."
+                    logger.error(f"{batch_msg} {error_msg}")
+                    take_screenshot(page, filename=error_msg, msg_prefix=batch_msg)                   
+                   
                     get_random_delay(CONFIG["new_request_delay_range"], fatigue=2, msg=f"{batch_msg}: Cooling down after errors")
                     error_count = 0
                 logger.debug(f"{batch_msg} Translating {len(chunk)} sentences per request")
@@ -85,13 +87,13 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
             
                 for attempt in range(CONFIG["retry_attempts"]):
                     try:
-                        translation = translate_sentence(page=page, sentence=merged_text, batch_idx=current_batch, logger=logger)
+                        translation = translate_sentence(page=page, sentence=merged_text, batch_idx=current_batch)
                         break
                     except Exception as e:
                         if(isinstance(e, NotFoundException)):
                             logger.warning(e.message + f" - {merged_text}")
                             translation = f"[NOT FOUND] - {merged_text}"
-                            page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} ERROR: {e.message} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                            take_screenshot(page, filename=f"{e.message}", msg_prefix=batch_msg)
                             break
                         logger.warning(f"{batch_msg} Attempt {attempt+1} failed for '{merged_text[:40]}...': {e}")
                         get_random_delay(CONFIG["retry_delay_range"])
@@ -119,13 +121,14 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
                         
                         results.append({    
                             SL: " ".join(chunk[i][0].split()),
-                            TL: translation.strip(),
+                            TL: clean_text(translation),
                             OL: " ".join(chunk[i][1].split())
                         })
 
             except Exception as e:
-                logger.error(f"{batch_msg} Unexpected error: {e}")
-                page.screenshot(path=f"{translation_logger.get_filepath()}/{batch_msg} | Unexpected error: {e} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                error_msg = f"Unexpected error: {e}"
+                logger.error(f"{batch_msg} {error_msg}")
+                take_screenshot(page, filename=error_msg, msg_prefix=batch_msg   )
                 error_count += 1
                 results.append({f"{SL}": chunk[i][0], f"{TL}": "[ERROR]", f"{OL}": chunk[i][1]})
             finally:

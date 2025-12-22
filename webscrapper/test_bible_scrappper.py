@@ -2,10 +2,8 @@ import os
 import queue
 import threading
 
-from datetime import datetime
 from typing import Dict, List, Tuple
 from playwright.sync_api import sync_playwright
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from constants.bibles import VERSIONS, KOAD21, BCNDA, ABK, NIV, BCC1923, BIBLE, BookInfo, VersionInfo, books, POSTFIX
 from constants.output import LOG_FILENAME, OUTPUT_FOLDER
@@ -15,6 +13,8 @@ from scrapper_config import CONFIG
 from logger import translation_logger
 from utils.batch_handling import BatchScheduler
 from utils.json_helper import save_batch_to_json
+from utils.pw_helper import take_screenshot
+from utils.txt_helper import clean_text
 
 logger = translation_logger.get_logger(
     output_folder=OUTPUT_FOLDER,
@@ -78,7 +78,7 @@ def merge_corpus(corpus_entries: List[Dict], msg_prefix: str = "") -> List[Dict]
         unique_verses.add(key)
         
         # Initialize entry if not exists
-        if not merged_corpus[key]:
+        if key not in merged_corpus:
             merged_corpus[key] = {
                 "book": entry["book"],
                 "chapter": entry["chapter"],
@@ -152,18 +152,18 @@ def process_book(book: BookInfo, version: VersionInfo, batch_idx: int, total_of_
                             "book": full_name,
                             "chapter": chapter,
                             "verse": verse_num,
-                            f"{suffix.lower()}{POSTFIX}": verse_text
+                            f"{suffix.lower()}{POSTFIX}": clean_text(verse_text)
                         })
                 else:
                     warning_msg = f"{batch_msg} No verses found for {full_name} {chapter} ({version['name']})"
-                    page.screenshot(path=f"{translation_logger.get_filepath()}/{warning_msg}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                    take_screenshot(page, filename=warning_msg, msg_prefix=batch_msg)    
                     logger.warning(f"{warning_msg}")
             except Exception as e:
                 error_msg = f'{batch_msg}_{str(e)}'
                 error_count += 1
-                logger.warning(error_msg)
-                page.screenshot(path=f"{translation_logger.get_filepath()}/{error_msg}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-        
+                logger.error(error_msg)
+                take_screenshot(page, filename=error_msg, msg_prefix=batch_msg)  
+                
         scheduler.ensure_interval_before_next_batch(batch_idx, total_of_batches, batch_msg)
         logger.debug(f"{batch_msg} Filtering logs.")
         translation_logger.filter_log(
@@ -217,7 +217,7 @@ def process_task(task_queue: queue.Queue[Tuple[int, BookInfo, VersionInfo]], res
 def main():
     # Process versions concurrently using ThreadPoolExecutor
     # Define the names of the four gospels
-    gospel_names = ["Luke", "John"]
+    gospel_names = ["Luke"]
 
     # Use a list comprehension to filter the original list
     # The BookInfo tuples are structured as: (Name, Abbreviation, Chapters, Index)

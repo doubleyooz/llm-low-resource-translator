@@ -1,12 +1,15 @@
-from datetime import datetime
 from typing import Dict, List, Tuple
 from playwright.sync_api import sync_playwright, Page
-from constants.output import OUTPUT_FOLDER, LOG_FILENAME
-from pw_user_sim import get_random_delay, perform_action, simulate_human
-from scrapper_config import CONFIG
+
+
 
 # Import the singleton logger
 from logger import translation_logger
+from utils.pw_helper import get_random_delay, perform_action, take_screenshot
+from pw_user_sim import simulate_human
+
+from scrapper_config import CONFIG
+from constants.output import OUTPUT_FOLDER, LOG_FILENAME
 
 logger = translation_logger.get_logger(
     output_folder=OUTPUT_FOLDER,
@@ -53,23 +56,23 @@ def extract_verses(page: Page, msg: str = '') -> List[str]:
         # Wait for verse containers to be attached to the DOM
         verse_locators = page.locator('[class*="ChapterContent_verse"]')
         verse_locators.first.wait_for(state="attached", timeout=CONFIG["page_timeout_ms"])
-        '''HEREEEEEE'''
+
         logger.info(f"{msg} Found {verse_locators.count()} verse containers")
 
         extracted_verses = []
         for i in range(verse_locators.count()):
-            try:
-               
+            try:     
                 verse = verse_locators.nth(i)
                 verse_num_locator = verse.locator('[class*="ChapterContent_label"]').first         
                 verse_text_locator = verse.locator('[class*="ChapterContent_content"]')
+                is_there_a_note = verse.locator('[class*="ChapterContent_note"]').first
 
                 verse_num = verse_num_locator.inner_text().strip() if verse_num_locator.is_visible() and verse_num_locator.inner_text().strip().isdigit() else None
                      
                 content_texts = verse_text_locator.all_inner_texts()          
                 verse_text = " ".join([text.strip() for text in content_texts if text.strip()])
              
-
+                
                 if verse_text:
                     if verse_num is None and extracted_verses:
                         extracted_verses[-1] += " " + verse_text                        
@@ -77,15 +80,19 @@ def extract_verses(page: Page, msg: str = '') -> List[str]:
                     else:
                         extracted_verses.append(verse_text)
                         logger.debug(f"{msg} Verse {verse_num}: {verse_text[:50]}...")
+                elif is_there_a_note.is_visible():
+                    extracted_verses.append('')
+                    logger.debug(f"{msg} Skipping verse {verse_num} as it contains only a note.")
+                        
+             
               #  else:
               #      logger.warning(f"No text found for verse {verse_num}")
             except Exception as e:
-                page.screenshot(path=f"{translation_logger.get_filepath()}/{msg} Error processing verse {verse_num}: {str(e)} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-                logger.error(f"{msg} Error processing verse {verse_num}: {str(e)}")
+                err_msg = f"Error processing verse {verse_num}: {str(e)}"
+                take_screenshot(page, filename=err_msg, msg_prefix=msg)
+
+                logger.error(f"{msg} {err_msg}")
         logger.info(f"{msg} Extracted {len(extracted_verses)} verses")
         return extracted_verses
     except Exception as e:
-        page.screenshot(path=f"{translation_logger.get_filepath()}/{msg} Error extracting verses: {str(e)} {datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-        logger.error(f"{msg} Error extracting verses: {str(e)}")
-        raise f"{msg} Error extracting verses: {str(e)}"
-    
+        raise f"Error extracting verses: {str(e)}"

@@ -1,21 +1,18 @@
-import logging
 import random
 import requests
 from typing import Dict, List, Tuple, Optional
 
-
+from constants.output import LOG_FILENAME, OUTPUT_FOLDER
+from logger import translation_logger
 from scrapper_config import CONFIG
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]
+logger = translation_logger.get_logger(
+    output_folder=OUTPUT_FOLDER,
+    log_filename=LOG_FILENAME
 )
-logger = logging.getLogger(__name__)
 
 # AUTO-REFRESH PROXIES (always fresh!)
-# -------------------------------
 def load_fresh_proxies() -> List[Dict]:
     """Fetches fresh elite/anonymous HTTP proxies from ProxyScrape"""
     if CONFIG["proxy_rotation"] is False:

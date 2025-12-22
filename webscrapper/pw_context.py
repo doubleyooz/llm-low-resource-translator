@@ -11,7 +11,6 @@ logger = translation_logger.get_logger(
     log_filename=LOG_FILENAME
 )
 
-
 def get_new_context(playwright: Playwright, headless: bool = False, useProxy: bool = False, msg_prefix: str = '') -> Tuple[Browser, BrowserContext]:
     browser = playwright.chromium.launch(headless=headless)  # Set to True for headless mode
       

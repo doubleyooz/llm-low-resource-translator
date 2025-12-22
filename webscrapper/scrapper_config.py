@@ -9,9 +9,9 @@ CONFIG = {
     "new_batch_delay_range": (80, 250),  # Delay range between batches
     "scroll_amount_range": (20, 400),  # Range for scroll amount
     "scroll_back_probability": 0.3,    # Probability of scrolling backward
-    "min_batch_interval": 3,  # Minimum interval between batches
-    "max_batch_interval": 8,  # Maximum interval between batches
-   
+    "min_batch_interval": 1,  # Minimum interval between requests
+    "max_batch_interval": 8,  # Maximum interval between requests
+
     "mouse_move_range_x": (-300, 800),  # X-coordinate range for mouse movement
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   

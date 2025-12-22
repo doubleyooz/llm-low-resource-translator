@@ -3,8 +3,8 @@ import random
 from playwright.sync_api import sync_playwright, Page, BrowserContext
 
 from scrapper_config import CONFIG
-from pw_user_sim import get_random_delay, perform_action, simulate_human
-
+from pw_user_sim import simulate_human
+from utils.pw_helper import get_random_delay, perform_action
 # -------------------------------
 # DeepL-specific Selectors (updated Nov 2025)
 # -------------------------------

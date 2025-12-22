@@ -1,19 +1,22 @@
-from datetime import datetime
-import logging
-import random
-
 from typing import Any, Dict, List, Tuple
-from xml.sax.xmlreader import Locator
-from playwright.sync_api import sync_playwright, Page, BrowserContext
-from urllib.parse import urlparse, parse_qs
+from playwright.sync_api import sync_playwright, Page
 
 from exceptions.not_found_exception import NotFoundException
 from constants.languages import SL, TL
-from constants.output import OUTPUT_FOLDER
+from constants.output import LOG_FILENAME, OUTPUT_FOLDER
 from scrapper_config import CONFIG
-from pw_user_sim import _click_element, get_random_delay, perform_action, simulate_human
+
+from utils.pw_helper import click_element, perform_action, get_random_delay
+from pw_user_sim import simulate_human
+
 # Import the singleton logger
 from logger import translation_logger
+
+logger = translation_logger.get_logger(
+    output_folder=OUTPUT_FOLDER,
+    log_filename=LOG_FILENAME
+)
+
 
 wordbank =   [
     "accept", "refuse", "offer", "decline", "choose", "pick", "select", "avoid", "ignore", "notice",
@@ -76,10 +79,8 @@ INPUT_TEXTAREA_SELECTOR = "input[class='gwt-TextBox searchBox']"
 def get_url (sl, tl):
     return 'https://www.akademikernewek.org.uk/corpus/?locale=en'
 
-# -------------------------------
 # Translation Core
-# -------------------------------
-def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: logging.Logger) -> str:
+def translate_sentence(page: Page, sentence: str, batch_idx: int) -> str:
     """Translate one sentence using Google Translate."""
     batch_msg = f"Batch {batch_idx}" 
     
@@ -95,7 +96,7 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int, logger: loggin
     
     return get_output(logger=logger, page=page, msg=batch_msg)
     
-def set_input(page: Page, sentence: str, msg: str = '', logger: logging.Logger = None) -> None:
+def set_input(page: Page, sentence: str, msg: str = '') -> None:
  
    
     perform_action(lambda: page.wait_for_selector(INPUT_TEXTAREA_SELECTOR, timeout=20000), f"{msg} | wait result")
@@ -113,13 +114,13 @@ def set_input(page: Page, sentence: str, msg: str = '', logger: logging.Logger =
     if final_text != sentence:
         raise ValueError(f"{msg} | Failed to set input text after {attempts} attempts.")
     
-def get_output(page: Page, logger: logging.Logger, msg: str = '') -> Tuple[List[str], List[str]]:
+def get_output(page: Page, msg: str = '') -> Tuple[List[str], List[str]]:
     buttons = page.locator(SAFE_CLICK_SELECTORS[0])
     attempts = 0
     max_attempts = 2
     while(attempts < max_attempts):
         logger.debug(f"{msg} | Attempt {attempts+1}/{max_attempts} {buttons.last.inner_text()}")
-        _click_element(buttons.last, msg)
+        click_element(buttons.last, msg)
         first_half = page.locator("tr[class='even']")
         second_half = page.locator("tr[class='odd']")
         even_elements = first_half.element_handles()
@@ -147,9 +148,12 @@ def get_output(page: Page, logger: logging.Logger, msg: str = '') -> Tuple[List[
         kw_output.append(result[1].strip())
         
     return en_output, kw_output
+
+'''
     "television", "screen", "remote", "channel", "movie", "actor", "actress", "director", "scene", "script",
-"radio", "news", "reporter", "camera", "lens", "flash", "film", "roll", "studio", "stage",
-"ticket", "seat", "audience", "crowd", "applause", "curtain", "costume", "mask", "mirror", "shadow",
-"river", "lake", "ocean", "island", "forest", "desert", "valley", "peak", "cliff", "cave",
-"farm", "field", "crop", "harvest", "barn", "tractor", "tool", "hammer", "nail", "screw",
-"building", "tower", "bridge", "tunnel", "station", "platform", "track", "signal", "bell", "whistle"
+    "radio", "news", "reporter", "camera", "lens", "flash", "film", "roll", "studio", "stage",
+    "ticket", "seat", "audience", "crowd", "applause", "curtain", "costume", "mask", "mirror", "shadow",
+    "river", "lake", "ocean", "island", "forest", "desert", "valley", "peak", "cliff", "cave",
+    "farm", "field", "crop", "harvest", "barn", "tractor", "tool", "hammer", "nail", "screw",
+    "building", "tower", "bridge", "tunnel", "station", "platform", "track", "signal", "bell", "whistle"
+'''
