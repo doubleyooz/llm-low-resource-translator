@@ -30,6 +30,8 @@ def clean_text(text: str, normalize_quotes: bool = True) -> str:
     text = re.sub(r'[\u200B\u200C\u200D\uFEFF\u2028\u2029]', '', text)
 
     # 4. Remove leading/trailing whitespace (again, just to be sure)
+    if text[0] == '[' and text[-1] == ']':
+        text = text[1:-1].strip()   
     text = text.strip()
 
     # 5. Optional: collapse multiple spaces again (in case normalization created them)

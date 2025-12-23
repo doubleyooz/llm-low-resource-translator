@@ -15,31 +15,34 @@ class BatchScheduler:
         log_filename=LOG_FILENAME
     )
 
-    def __init__(self):
+    def __init__(self, max_workers: int):
         self.last_batch_start_time = 0
         self.batch_timing_lock = threading.Lock()
         self.completed_batches = 0
         self.completed_batches_lock = threading.Lock()
+        self.max_workers = max_workers
+        
 
     def ensure_interval_before_next_batch(self, batch_idx: int, total_of_batches: int, msg: str = ""):
         """
         Applies a random delay before allowing the next batch if there are enough remaining batches.
         """
+        self.__logger.debug(f"{msg} Ensuring interval before next batch...")
         with self.completed_batches_lock:
             self.completed_batches += 1
             remaining_batches = total_of_batches - self.completed_batches
-            if CONFIG['max_workers'] <= remaining_batches:
-                self.__logger.info(f"{msg} | Sleeping before next batch...")
+            if self.max_workers <= remaining_batches:
+                self.__logger.info(f"{msg} Sleeping before next batch...")
                 get_random_delay(
                     delay_range=CONFIG["new_batch_delay_range"],
-                    fatigue=1 + (batch_idx / (CONFIG['batch_size'] * CONFIG['max_workers'])) * 3,
+                    fatigue=1 + (batch_idx / (CONFIG['batch_size'] * self.max_workers)) * 3,
                     msg=msg
                 )
                 self.__logger.info(f"{msg} Next batch is ready to start...")
 
     def ensure_batch_interval(self, msg: str):
         """
-        Ensures a minimum time interval between the start of consecutive batches.
+        Ensures a minimum time interval between the start of consecutive requests.
         """
         with self.batch_timing_lock:
             current_time = time.time()

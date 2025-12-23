@@ -62,15 +62,15 @@ def random_mouse_movement(page: Page, msg: str = "") -> None:
         msg=msg
     )    
 
-def click_element(element: Locator, msg: str = "", hover: bool = False, raise_exception: bool = False) -> bool:
+def click_element(element: Locator, msg_prefix: str = "", hover: bool = False, raise_exception: bool = False) -> bool:
         """Click an element with realistic delay."""
         try:
             if isinstance(element, list):
                 if len(element) == 0:
-                    logger.warning(f"{msg} Empty element list provided")
+                    logger.warning(f"{msg_prefix} Empty element list provided")
                     raise ValueError("Empty element list")
                 element = element[0]  # Use first element from list
-                logger.debug(f"{msg} Using first element from list ({len(element)} elements total)")
+                logger.debug(f"{msg_prefix} Using first element from list ({len(element)} elements total)")
 
                 
             element_description = (
@@ -85,7 +85,7 @@ def click_element(element: Locator, msg: str = "", hover: bool = False, raise_ex
                     description=f"hover: {element_description}",
                     delay_range=CONFIG["scroll_delay_range"],
                     raise_exception=raise_exception,
-                    msg=msg
+                    msg=msg_prefix
                 )
             
             return perform_action(
@@ -93,10 +93,10 @@ def click_element(element: Locator, msg: str = "", hover: bool = False, raise_ex
                 description=f"click: {element_description}",
                 delay_range=CONFIG["button_delay_range"],
                 raise_exception=raise_exception,
-                msg=msg
+                msg=msg_prefix
             )
         except Exception as e:
-            logger.warning(f"{msg} Click failed: {e}")
+            logger.warning(f"{msg_prefix} Click failed: {e}")
             if raise_exception:
                 raise e
             return False

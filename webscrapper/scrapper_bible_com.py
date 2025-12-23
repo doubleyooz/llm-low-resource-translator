@@ -18,9 +18,10 @@ logger = translation_logger.get_logger(
 
 SAFE_CLICK_SELECTORS = [
     "button[aria-label='profile menu']",
-    "button[id='headlessui-popover-button-:R1nlal9m:']"
-    "input[aria-label=''Search]"
-    
+    "button[id='headlessui-popover-button-:R1nlal9m:']",
+    "button[id='headlessui-popover-button-:r2:']",
+    "button[id='headlessui-popover-button-:r6:']",
+    "input[aria-label=''Search]"    
 ]
 
 
@@ -71,22 +72,37 @@ def extract_verses(page: Page, msg: str = '') -> List[str]:
                      
                 content_texts = verse_text_locator.all_inner_texts()          
                 verse_text = " ".join([text.strip() for text in content_texts if text.strip()])
-             
-                
+                              
+                             
+                # if no verse_text and verse_number and note: skip
+                # if verse_text and verse_number and note: add
+                # if verse_text and no verse_number and note: add
+                # if verse_text and verse_number is greater than previous+1: skip and add
+                              
+                                                              
                 if verse_text:
-                    if verse_num is None and extracted_verses:
-                        extracted_verses[-1] += " " + verse_text                        
-                        logger.debug(f"{msg} Continued verse: {verse_text[:50]}...")
-                    else:
+                    if verse_num:
+                        if str.isnumeric(verse_num) and int(verse_num) > len(extracted_verses) + 1:                          
+                            extracted_verses.append('')
+                            logger.debug(f"{msg} Inserting missing verse placeholder.")
                         extracted_verses.append(verse_text)
                         logger.debug(f"{msg} Verse {verse_num}: {verse_text[:50]}...")
+                                    
+                    elif verse_num is None and extracted_verses:                            
+                        # if is_there_a_note.is_visible():
+                        #    extracted_verses.append('')
+                        #    logger.debug(f"{msg} Skipping verse {verse_num} as it contains only a note.")
+                        # else:
+                            extracted_verses[-1] += " " + verse_text                        
+                            logger.debug(f"{msg} Continued verse: {verse_text[:50]}...")
+                    
+                  
                 elif is_there_a_note.is_visible():
                     extracted_verses.append('')
                     logger.debug(f"{msg} Skipping verse {verse_num} as it contains only a note.")
-                        
-             
-              #  else:
-              #      logger.warning(f"No text found for verse {verse_num}")
+                     
+                else:
+                    logger.debug(f"{msg} No text found for verse {verse_num}")
             except Exception as e:
                 err_msg = f"Error processing verse {verse_num}: {str(e)}"
                 take_screenshot(page, filename=err_msg, msg_prefix=msg)

@@ -6,7 +6,7 @@ POSTFIX: str = "_text"
 
 type BookInfo = tuple[str, str, int, int]
 
-# Hardcoded book data: (full_name, abbrev, num_chapters, book_id, done)
+# Hardcoded book data: (full_name, abbrev, num_chapters, book_id)
 # Book IDs are sequential starting from 1 (Genesis=1, etc.)
 
 books: List[BookInfo] = [
@@ -49,10 +49,17 @@ books: List[BookInfo] = [
     ("Haggai", "HAG", 2, 37),
     ("Zechariah", "ZEC", 14, 38),
     ("Malachi", "MAL", 4, 39),
-    ("Matthew", "MAT", 28, 40),
-    ("Mark", "MRK", 16, 41),
-    ("Luke", "LUK", 24, 42),
-    ("John", "JHN", 21, 43),
+    ("1 Maccabees", "1MA", 16, 40),
+    ("2 Maccabees", "2MA", 15, 41),
+    ("Wisdom", "WIS", 19, 67),
+    ("Sirach", "SIR", 51, 68),
+    ("Tobit", "TOB", 14, 69),
+    ("Judith", "JDT", 16, 70),
+    ("Baruch", "BAR", 6, 71),
+    ("Matthew", "MAT", 28, 42),
+    ("Mark", "MRK", 16, 43),
+    ("Luke", "LUK", 24, 44),
+    ("John", "JHN", 21, 45),
     ("Acts", "ACT", 28, 44),
     ("Romans", "ROM", 16, 45),
     ("1 Corinthians", "1CO", 16, 46),
@@ -136,6 +143,27 @@ NIV: VersionInfo = {
     "apocrypha": False,
 }
 
+CPDV: VersionInfo = {
+    'text': "cpdv",
+    'suffix': "CPDV",
+    'id': 42,
+    "language": "English",
+    "name": "Catholic Public Domain Version",
+    "file": f'{BIBLE}_cpdv.txt',
+    "apocrypha": True,
+}
+
+PDV2017: VersionInfo = {
+    'text': "pdv2017",
+    'suffix': "PDV2017",
+    'id': 133,
+    "language": "French",
+    "name": "Parole de Vie 2017",
+    "file": f'{BIBLE}_pdv2017.txt',
+    "apocrypha": True,
+}
+
+# Mark 4:40-41 are merged into a single verse in BCC1923
 BCC1923: VersionInfo = {
     'text': "bcc1923",
     'suffix': "BCC1923",
@@ -155,6 +183,6 @@ VERSIONS = [
     KOAD21,
     BCNDA,
     ABK,
-    NIV,
+    CPDV,
     BCC1923,
 ]

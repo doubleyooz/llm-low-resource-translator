@@ -1,4 +1,5 @@
 import random
+from typing import List
 from playwright.sync_api import sync_playwright, Page, BrowserContext, Locator
 from constants.output import OUTPUT_FOLDER, LOG_FILENAME
 from scrapper_config import CONFIG
@@ -13,7 +14,7 @@ logger = translation_logger.get_logger(
 )
 
     
-def _simulate_scrolling(page: Page, msg: str = "") -> None:
+def simulate_scrolling(page: Page, msg: str = "") -> None:
     """Simulate realistic scrolling behavior."""
     try:
         # Get page dimensions
@@ -42,10 +43,10 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
             remaining = target_scroll - current_scroll       
                  
             upper_bound = int(max(300, remaining / 3))
+            lower_bound = min(int(max(100, remaining / 8)), upper_bound - 50)
             
             # Determine scroll amount (don't overshoot)
-            scroll_amount = random.randint(100, upper_bound)
-            
+            scroll_amount = random.randint(lower_bound, upper_bound)            
           
          
             logger.debug(f"{msg} Remaining scroll: {remaining:.0f}px, initial scroll amount: {scroll_amount}px")
@@ -57,13 +58,22 @@ def _simulate_scrolling(page: Page, msg: str = "") -> None:
            
             # Occasionally scroll back on the opposite direction
             if (random.random() < CONFIG["scroll_back_probability"] and 
-                current_scroll > scroll_amount) or current_scroll > target_scroll:
+                current_scroll > scroll_amount and abs(scroll_amount) < 450) or current_scroll > target_scroll:
                 scroll_amount = -scroll_amount
             
             # If the target_scroll is negative and scroll_amount is positive, let's invert the scroll_amount sign to shorten the distance
             elif scroll_amount > 0 and 0 > target_scroll:
                 scroll_amount = -scroll_amount
+            
+            if scroll_amount > 0 and iterations > random.randint(15, 25):                
+                # Occasionally scroll less instead of more
+                if random.random() < 0.2:  # 20% chance to scroll less
+                    multiplier = random.uniform(0.7, 0.9)
+                else:
+                    multiplier = random.uniform(1.3, 2.2)
                 
+                scroll_amount = int(scroll_amount * multiplier)
+            
             perform_action(
                     action=lambda: page.evaluate(f"window.scrollBy(0, {scroll_amount})"),
                     description=f"scrolling by {scroll_amount}px. {current_scroll:.0f}px → {target_scroll:.0f}px",
@@ -87,7 +97,7 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
     # Light human simulation: scroll + mouse move.
     try:
         logger.info(f"{msg} Simulating human behaviour...")
-        _simulate_scrolling(page, msg)
+        simulate_scrolling(page, msg)
               
         for _ in range(number_of_clicks):
             
@@ -109,7 +119,7 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
             if random.random() <= button_click_probability:
                 logger.debug(f"{msg} Simulating random button click...")
                 # Filter only visible & enabled buttons
-                clickable = []
+                clickable: List[Locator] = []
                 for sel in selectors:
                     try:
                         el = page.locator(sel).first
@@ -119,7 +129,7 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
                         continue
                 if clickable:
                     target_button = random.choice(clickable)
-                    
+                    hover_successful = False
                     # Critical: hover before click (humans always hover)
                     try:
                         box = target_button.bounding_box()
@@ -134,11 +144,13 @@ def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int 
                                 delay_range=CONFIG["scroll_delay_range"],
                                 msg=msg
                             )
+                            hover_successful = True
                         
                     except:
+                        hover_successful = False
                         pass
-                    
-                    click_element(target_button, msg)      
+
+                    click_element(target_button, hover=not hover_successful, msg_prefix=msg)      
                 else:
                     logger.debug(f"{msg} No clickable elements found for selectors: {selectors}")        
 

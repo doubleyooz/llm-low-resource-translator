@@ -93,12 +93,12 @@ def translate_sentence(page: Page, sentence: str, batch_idx: int) -> str:
         if current_query_params.get('sl')[0] == SL and current_query_params.get('tl')[0] == TL:
             logger.warning(f"{batch_msg} Clicking on swap languages {DOUBLE_CLICK_SELECTORS[0]} for backtranslation...")
             try:                
-                click_element(page.locator(DOUBLE_CLICK_SELECTORS[0]).first, msg=batch_msg, raise_exception=True)
+                click_element(page.locator(DOUBLE_CLICK_SELECTORS[0]).first, msg_prefix=batch_msg, raise_exception=True)
             except Exception as e:
                 try:
                     new_locator = DOUBLE_CLICK_SELECTORS[0].replace("Cmd", "Ctrl")
                     logger.debug(f"{batch_msg} Retry clicking swap languages button with {new_locator}...")
-                    click_element(page.locator(new_locator).first, msg=batch_msg, raise_exception=True)
+                    click_element(page.locator(new_locator).first, msg_prefix=batch_msg, raise_exception=True)
                    
                 except Exception as e2:
                     err_msg = f"Failed to click swap languages button. {str(e)}"
@@ -148,7 +148,7 @@ def _click_language_option(page: Page, language_code: str, _language_list: Locat
         menu_state = _language_list.get_attribute('aria-expanded')
         if menu_state != 'true':
             logger.debug(f"{batch_msg} Opening language menu")
-            click_element(_language_list, msg=batch_msg, hover=True)
+            click_element(_language_list, msg_prefix=batch_msg, hover=True)
         
         
         logger.debug(f"{batch_msg} Searching for language options...")
@@ -174,10 +174,10 @@ def _click_language_option(page: Page, language_code: str, _language_list: Locat
                     if menu_state != 'true':
                         take_screenshot(page, filename=f"Menu not expanded for {_language_list.get_attribute('aria-label')}_menu{language_code} at index {i}", msg_prefix=batch_msg)
                         logger.debug(f"{batch_msg} Opening language menu")
-                        click_element(_language_list, msg=batch_msg, hover=True)
+                        click_element(_language_list, msg_prefix=batch_msg, hover=True)
                     # take_screenshot(page, filename=f"Menu expanded for {_language_list.get_attribute('aria-label')}_menu{language_code} at index {i}", msg_prefix=batch_msg)
                     logger.debug(f"{batch_msg} {_language_list.get_attribute('aria-label')} Menu is visible: {_language_list.is_visible()}, Option is visible: {found_element.is_visible()}")
-                    success = click_element(element=found_element, msg=batch_msg, hover=True, raise_exception=True)
+                    success = click_element(element=found_element, msg_prefix=batch_msg, hover=True, raise_exception=True)
                 except Exception as e:
                     logger.debug(f"{batch_msg} Selector failed: {e}")
                     continue
@@ -196,7 +196,7 @@ def _click_language_option(page: Page, language_code: str, _language_list: Locat
         final_state = _language_list.get_attribute('aria-expanded')
         if final_state == 'true':
             logger.warning(f"{batch_msg} Menu didn't close automatically, closing manually")
-            click_element(_language_list, msg=batch_msg, hover=True)
+            click_element(_language_list, msg_prefix=batch_msg, hover=True)
     
     except Exception as e:
         error_msg = f"Language selection failed for {language_code}: {str(e)}"
@@ -222,7 +222,7 @@ def set_input(page: Page, sentence: str, msg: str = '') -> None:
         menu_state = menu.get_attribute('aria-expanded')
         if menu_state == 'true':
             logger.debug(f"{msg} Ensuring menu {menu.get_attribute('aria-label')} is closed...")
-            click_element(menu, msg=msg, hover=True)
+            click_element(menu, msg_prefix=msg, hover=True)
         
    
     perform_action(lambda: page.wait_for_selector(INPUT_TEXTAREA_SELECTOR, timeout=20000), f"{msg} wait result")
@@ -234,7 +234,7 @@ def set_input(page: Page, sentence: str, msg: str = '') -> None:
     attempts = 0
     while final_text != sentence and attempts < 3:
         # clear textbox
-        click_element(page.locator(UNSAFE_CLICK_SELECTORS[0]).first, msg=msg)
+        click_element(page.locator(UNSAFE_CLICK_SELECTORS[0]).first, msg_prefix=msg)
         perform_action(lambda:  page.fill(INPUT_TEXTAREA_SELECTOR, sentence), f"{msg} type in text to be translated")
         final_text = textbox.input_value()
         attempts += 1
