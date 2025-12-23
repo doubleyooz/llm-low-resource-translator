@@ -57,9 +57,9 @@ def simulate_scrolling(page: Page, msg: str = "") -> None:
                 scroll_amount = scroll_amount if remaining > 0 else -scroll_amount
            
             # Occasionally scroll back on the opposite direction
-            if (random.random() < CONFIG["scroll_back_probability"] and 
-                current_scroll > scroll_amount and abs(scroll_amount) < 450) or current_scroll > target_scroll:
-                scroll_amount = -scroll_amount
+            if random.random() < CONFIG["scroll_back_probability"]:
+                if current_scroll > scroll_amount and abs(scroll_amount) < 450 or current_scroll > target_scroll:
+                    scroll_amount = -scroll_amount
             
             # If the target_scroll is negative and scroll_amount is positive, let's invert the scroll_amount sign to shorten the distance
             elif scroll_amount > 0 and 0 > target_scroll:

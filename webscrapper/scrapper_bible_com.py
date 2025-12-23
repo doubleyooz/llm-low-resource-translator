@@ -7,6 +7,7 @@ from playwright.sync_api import sync_playwright, Page
 from logger import translation_logger
 from utils.pw_helper import get_random_delay, perform_action, take_screenshot
 from pw_user_sim import simulate_human
+from exceptions.not_found_exception import NotFoundException
 
 from scrapper_config import CONFIG
 from constants.output import OUTPUT_FOLDER, LOG_FILENAME
@@ -40,9 +41,19 @@ def fetch_chapter(page: Page, full_name: str, url: str, chapter: int, total_of_c
     for attempt in range(CONFIG["retry_attempts"]):
         try:
             perform_action(action=lambda: page.goto(url, timeout=CONFIG["page_timeout_ms"]), description="page navigation", delay_range=CONFIG["interaction_delay_range"], msg=msg)
+            not_found_locator = page.locator('[class*="ChapterContent_not-avaliable-span"]').first
+            if not_found_locator.is_visible():
+                error_msg = f"Chapter {chapter} not found at {url}."
+                logger.warning(f"{msg} {error_msg}")
+                raise NotFoundException(error_msg)
+            
             simulate_human(page, selectors=SAFE_CLICK_SELECTORS, msg=msg)
             return extract_verses(page, msg=msg)
+        except NotFoundException as nf:
+            raise nf
+        
         except Exception as e:
+            
             logger.error(f"{msg} Attempt {attempt + 1}/{CONFIG['retry_attempts']} failed for {full_name} {chapter}: {str(e)}")
             if attempt < CONFIG["retry_attempts"] - 1:
                 get_random_delay(CONFIG["retry_delay_range"])

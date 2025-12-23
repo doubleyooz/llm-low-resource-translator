@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable, List, Optional
 
 from constants.output import OUTPUT_FOLDER
+from utils.txt_helper import sanitize_txt
 
 class SingletonLogger:
     _instance: Optional['SingletonLogger'] = None
@@ -51,15 +52,14 @@ class SingletonLogger:
         else:
             output_folder = Path(output_folder)
 
-        # Ensure output folder exists
-        
+        # Ensure output folder exists        
         os.makedirs(output_folder, exist_ok=True)
         
         current_date = datetime.now().strftime('%Y%m%d_%H%M%S')
-        print(log_filename)
+        
         if log_filename:
             log_filename = log_filename.split('.')
-            self._log_filename = f"{log_filename[0]}_{current_date}"
+            self._log_filename = f"{sanitize_txt(log_filename[0])}_{current_date}"
         else:
             self._log_filename =  f"{hash(f'{current_date}_{output_folder}')}_{current_date}"
               
@@ -76,7 +76,7 @@ class SingletonLogger:
         self._log_filename = os.path.join(
             output_folder,
             self._log_filename,
-            f"{self._log_filename}{self._ext}"
+            f"{self._log_filename}.{self._ext}"
         )
 
 
@@ -121,7 +121,7 @@ class SingletonLogger:
             RuntimeError: If logger is not initialized
         """
         if self.logger is None:
-            self.setup_logger(level=logging.DEBUG, log_filename=log_filename, output_folder=output_folder)
+            self.setup_logger(level=logging.INFO, log_filename=log_filename, output_folder=output_folder)
         return self.logger
 
     def shutdown(self):
@@ -172,6 +172,7 @@ class SingletonLogger:
             new_log_path = base_path.with_name(f"{new_stem}{base_path.suffix}")
         else:            
             new_filename = new_filename.split('.')[0]
+            new_filename = sanitize_txt(new_filename)
             new_filename += suffix if suffix and not new_filename.endswith(suffix) else ""
             new_filename += f"{self._ext}" if not new_filename.endswith(f"{self._ext}") else ""
             new_log_path = self._filepath + '/' + new_filename

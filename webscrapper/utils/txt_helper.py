@@ -1,5 +1,35 @@
+import os
 import re
 from typing import Optional
+
+def sanitize_txt(text: str, max_length: int = 80) -> str:
+    """
+    Very conservative sanitization - only allows alphanumeric, underscore, hyphen, and dot.
+    """
+    if not text:
+        return "unnamed"
+    
+    # Only keep safe characters
+    sanitized = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', text)
+    
+    # Remove consecutive underscores
+    sanitized = re.sub(r'_+', '_', sanitized)
+    
+    # Remove leading/trailing dots and dashes
+    sanitized = sanitized.strip('.-_')
+    
+    # Ensure not empty
+    if not sanitized:
+        return "unnamed"
+    
+    # Truncate
+    if len(sanitized) > max_length:
+        name, ext = os.path.splitext(sanitized)
+        if len(ext) > 0 and len(ext) <= 10:  # Reasonable extension length
+            return name[:max_length - len(ext)] + ext
+        return sanitized[:max_length]
+    
+    return sanitized
 
 def clean_text(text: str, normalize_quotes: bool = True) -> str:
     """

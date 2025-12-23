@@ -7,6 +7,7 @@ from playwright.sync_api import sync_playwright, Page, BrowserContext, Locator
 from constants.output import LOG_FILENAME, OUTPUT_FOLDER
 from logger import translation_logger
 from scrapper_config import CONFIG
+from utils.txt_helper import sanitize_txt
 
 
 logger = translation_logger.get_logger(
@@ -20,7 +21,10 @@ def set_fatigue(fatigue: float = 1):
     
 def take_screenshot(page: Page, filename: str, msg_prefix: str = "") -> None:
     logger.warning(f"{msg_prefix} Taking screenshot in order to sort out an issue {filename}...")
-    page.screenshot(path=f"{translation_logger.get_filepath()}/{msg_prefix}_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+    
+    msg_prefix = sanitize_txt(msg_prefix)
+    filename = sanitize_txt(filename).removeprefix(msg_prefix)
+    page.screenshot(path=f"{translation_logger.get_filepath()}/screenshots/{msg_prefix}_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
 
 def get_random_delay(delay_range: Tuple[float, float] = None, fatigue: float = 1, msg: str = "") -> None:
     if delay_range is None or len(delay_range) != 2:

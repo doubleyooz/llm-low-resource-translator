@@ -162,11 +162,13 @@ def process_book(book: BookInfo, version: VersionInfo, batch_idx: int, total_of_
                     take_screenshot(page, filename=warning_msg, msg_prefix=_batch_msg)    
                     logger.warning(f"{warning_msg}")
             except Exception as e:
-                error_msg = f'{_batch_msg}_{str(e)}'
+                error_msg = f'{_batch_msg} {str(e)}'
                 error_count += 1
                 logger.error(error_msg)
                 take_screenshot(page, filename=error_msg, msg_prefix=_batch_msg)  
-                
+        
+        context.close()
+        browser.close()        
         scheduler.ensure_interval_before_next_batch(batch_idx, total_of_batches, batch_msg)
         logger.debug(f"{batch_msg} Filtering logs.")
         batch_msg = batch_msg[:-3]
@@ -176,8 +178,6 @@ def process_book(book: BookInfo, version: VersionInfo, batch_idx: int, total_of_
             msg=_batch_msg
         )
              
-        context.close()
-        browser.close()
     return corpus_entries, full_name
 
 
@@ -197,7 +197,7 @@ def process_task(task_queue: queue.Queue[Tuple[int, BookInfo, VersionInfo]], res
            
             
             book_entries, book_name = process_book(book, version, book_idx, task_queue.qsize(), batch_msg)           
-            save_to_txt(book_entries, book, version, batch_msg)
+            
             corpus_entries.extend(book_entries)
             
             result_queue.put({
@@ -247,12 +247,10 @@ def split_chapters_evenly(total_chapters: int, max_chapters_per_task: int = 20) 
     return ranges
 
 
-
-
 def main():
     # Process versions concurrently using ThreadPoolExecutor
     # Define the names of the four gospels
-    # gospel_names = ["Mark", "Luke"]
+    # gospel_names = ["1 Maccabees", "2 Maccabees", "Tobit", "Judith", "Sirach"]
 
     # Use a list comprehension to filter the original list
     # The BookInfo tuples are structured as: (Name, Abbreviation, Chapters, Index)

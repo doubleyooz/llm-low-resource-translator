@@ -39,6 +39,8 @@ class BatchScheduler:
                     msg=msg
                 )
                 self.__logger.info(f"{msg} Next batch is ready to start...")
+            else:
+                self.__logger.info(f"{msg} Not enough remaining batches ({remaining_batches}) to enforce delay.")
 
     def ensure_batch_interval(self, msg: str):
         """
