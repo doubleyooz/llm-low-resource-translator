@@ -140,6 +140,7 @@ class SingletonLogger:
         new_filename: str = None,
         suffix: str = "_filtered",
         prefix: str = "",
+        output_folder: str = None,
         encoding: str = "utf-8",
         msg: str = "",
     ) -> str:
@@ -164,7 +165,7 @@ class SingletonLogger:
         if not self._filepath or not self.logger:
             raise RuntimeError("Logger has not been initialized yet. Call setup_logger() first.")
 
-        # Auto-generate new filename if not provided
+        # Auto-generate new filena output_folder = self._filepathme if not provided
         if new_filename is None:
             base_path = Path(current_log_path)
             stem = base_path.stem
@@ -175,11 +176,32 @@ class SingletonLogger:
             new_filename = sanitize_txt(new_filename)
             new_filename += suffix if suffix and not new_filename.endswith(suffix) else ""
             new_filename += f"{self._ext}" if not new_filename.endswith(f"{self._ext}") else ""
-            new_log_path = self._filepath + '/' + new_filename
+            
+            if output_folder is None:
+                output_folder = self._filepath
 
+            new_log_path =  new_filename
+            
+        if output_folder is None:
+            output_folder = self._filepath
+
+        else:
+            output_folder = os.path.join(
+                self._filepath,
+                output_folder,
+            )
+
+        # Ensure output folder exists        
+        os.makedirs(output_folder, exist_ok=True)
+        
+        new_log_path = os.path.join(
+                output_folder,
+                new_log_path,
+        )
+        
         filtered_lines: List[str] = []
         total_lines = 0
-
+    
         with open(self._log_filename, 'r', encoding=encoding) as src:
             for line in src:
                 total_lines += 1

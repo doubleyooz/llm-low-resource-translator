@@ -1,6 +1,7 @@
 import random
 from typing import List
 from playwright.sync_api import sync_playwright, Page, BrowserContext, Locator
+from constants.bibles import DEFAULT, FASTER, SLOWER
 from constants.output import OUTPUT_FOLDER, LOG_FILENAME
 from scrapper_config import CONFIG
 
@@ -14,13 +15,13 @@ logger = translation_logger.get_logger(
 )
 
     
-def simulate_scrolling(page: Page, msg: str = "") -> None:
+def simulate_scrolling(page: Page, msg: str = "", speed: str = DEFAULT) -> None:
     """Simulate realistic scrolling behavior."""
     try:
         # Get page dimensions
         scroll_height = page.evaluate("document.documentElement.scrollHeight")
         viewport_height = page.evaluate("window.innerHeight")
-        max_scroll = max(0, scroll_height - viewport_height)
+        max_scroll = min(max(0, scroll_height - viewport_height), 4500)
         
         if max_scroll < 100:
             logger.debug(f"{msg} No scrollable content")
@@ -34,6 +35,13 @@ def simulate_scrolling(page: Page, msg: str = "") -> None:
         current_scroll = page.evaluate("window.pageYOffset")
         iterations = 0
         max_iterations = CONFIG.get("max_scroll_iterations", 50)
+        
+        if speed == FASTER:
+            target_scroll = int(target_scroll * random.uniform(0.7, 0.9))
+            max_iterations = int(max_iterations * 0.6)
+        elif speed == SLOWER:
+            target_scroll = int(target_scroll * random.uniform(1.1, 1.3))
+            max_iterations = int(max_iterations * 1.4)
         
         logger.debug(f"{msg} Entering scrolling loop")
         
@@ -57,7 +65,8 @@ def simulate_scrolling(page: Page, msg: str = "") -> None:
                 scroll_amount = scroll_amount if remaining > 0 else -scroll_amount
            
             # Occasionally scroll back on the opposite direction
-            if random.random() < CONFIG["scroll_back_probability"]:
+            scroll_back_probability = CONFIG["scroll_back_probability"] / 3 if speed == FASTER else CONFIG["scroll_back_probability"]
+            if random.random() < scroll_back_probability:
                 if current_scroll > scroll_amount and abs(scroll_amount) < 450 or current_scroll > target_scroll:
                     scroll_amount = -scroll_amount
             
@@ -65,7 +74,8 @@ def simulate_scrolling(page: Page, msg: str = "") -> None:
             elif scroll_amount > 0 and 0 > target_scroll:
                 scroll_amount = -scroll_amount
             
-            if scroll_amount > 0 and iterations > random.randint(15, 25):                
+            iteration_threshold = random.randint(10, 20) if speed == FASTER else random.randint(20, 30) if speed == SLOWER else random.randint(15, 25)
+            if scroll_amount > 0 and iterations > iteration_threshold:                
                 # Occasionally scroll less instead of more
                 if random.random() < 0.2:  # 20% chance to scroll less
                     multiplier = random.uniform(0.7, 0.9)
@@ -73,6 +83,12 @@ def simulate_scrolling(page: Page, msg: str = "") -> None:
                     multiplier = random.uniform(1.3, 2.2)
                 
                 scroll_amount = int(scroll_amount * multiplier)
+            
+            # extra boost
+            if speed == FASTER:
+                scroll_amount = int(scroll_amount * random.uniform(1.2, 1.5))
+            elif speed == SLOWER:
+                scroll_amount = int(scroll_amount * random.uniform(0.7, 0.9))
             
             perform_action(
                     action=lambda: page.evaluate(f"window.scrollBy(0, {scroll_amount})"),
@@ -93,11 +109,13 @@ def simulate_scrolling(page: Page, msg: str = "") -> None:
         logger.debug(f"{msg} Scrolling simulation failed: {e}")
 
     
-def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int = 1, button_click_probability: float = CONFIG["button_click_probability"], msg: str = "") -> None:
+def simulate_human(page: Page, selectors: list[str] = [], number_of_clicks: int = 1, button_click_probability: float = CONFIG["button_click_probability"], msg: str = "", speed: str = DEFAULT) -> None:
     # Light human simulation: scroll + mouse move.
     try:
         logger.info(f"{msg} Simulating human behaviour...")
-        simulate_scrolling(page, msg)
+        if speed not in [FASTER, DEFAULT, SLOWER]:
+            speed = DEFAULT    
+        simulate_scrolling(page, msg=msg, speed=speed)
               
         for _ in range(number_of_clicks):
             

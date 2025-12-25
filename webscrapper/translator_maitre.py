@@ -39,7 +39,7 @@ logger = translation_logger.get_logger(
 MERGE_SYMBOL = "<|||>"  # Symbol to merge multiple sentences
 
 
-scheduler = BatchScheduler()
+scheduler = BatchScheduler(max_workers=CONFIG["max_workers"])
 
 # Worker: Process One Batch
 def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_of_batches: int) -> List[Dict]:
@@ -135,7 +135,7 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
                 # Random delay between requests
                 get_random_delay(CONFIG["new_request_delay_range"])
         
-        scheduler.ensure_interval_before_next_batch(batch_idx, total_of_batches, batch_msg)
+        scheduler.ensure_interval_before_next_batch(total_of_batches, batch_msg)
                           
         translation_logger.filter_log(
             filter_func=lambda line: batch_msg in line,

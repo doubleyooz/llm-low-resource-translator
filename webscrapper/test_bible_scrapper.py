@@ -1,12 +1,15 @@
 import os
 import queue
+import random
 import threading
 
 from typing import Dict, List, Tuple
+from typing_extensions import TypedDict
 from playwright.sync_api import sync_playwright
 
 from constants.bibles import VERSIONS, KOAD21, BCNDA, ABK, NIV, BCC1923, BIBLE, BookInfo, VersionInfo, books, POSTFIX
 from constants.output import LOG_FILENAME, OUTPUT_FOLDER
+from exceptions.not_found_exception import NotFoundException
 from pw_context import get_new_context
 from scrapper_bible_com import fetch_chapter, get_url
 from scrapper_config import CONFIG
@@ -20,6 +23,26 @@ logger = translation_logger.get_logger(
     output_folder=OUTPUT_FOLDER,
     log_filename=LOG_FILENAME
 )
+
+class TaskResultType(TypedDict):
+   
+    book: BookInfo
+    version: VersionInfo
+    book_id: int
+    entries: List[Dict[str, any]]
+    
+
+class EntryType(TypedDict, extra_items=str):
+    chapter: int
+    verse: int
+    book_name: str
+    book_id: int
+    
+   
+    
+    
+TaskType = Tuple[int, BookInfo, VersionInfo, int, int]
+
 
 scheduler = BatchScheduler(max_workers=CONFIG['max_workers'])
 
@@ -62,7 +85,7 @@ def save_to_txt(book_entries: List[str], book_title: str, version: VersionInfo, 
             logger.error(f"Error processing book {book_title} ({version_name}): {str(e)}")
         
 
-def merge_corpus(corpus_entries: List[Dict], msg_prefix: str = "") -> List[Dict]:
+def merge_corpus(corpus_entries: List[EntryType], msg_prefix: str = "") -> List[Dict]:
     """Merge corpus entries into a parallel corpus."""
     merged_corpus = {}
     logger.info(f'{msg_prefix} Merging {len(corpus_entries)} corpus entries')
@@ -74,13 +97,15 @@ def merge_corpus(corpus_entries: List[Dict], msg_prefix: str = "") -> List[Dict]
     unique_verses = set()
     
     for entry in corpus_entries:
-        key = (entry["book"], entry["chapter"], entry["verse"])
+        print(entry)
+        key = (entry["book_name"], entry["chapter"], entry["verse"])
         unique_verses.add(key)
         
         # Initialize entry if not exists
         if key not in merged_corpus:
             merged_corpus[key] = {
-                "book": entry["book"],
+                "book_name": entry["book_name"],
+                "book_id": entry["book_id"],
                 "chapter": entry["chapter"],
                 "verse": entry["verse"],
             }
@@ -101,7 +126,7 @@ def merge_corpus(corpus_entries: List[Dict], msg_prefix: str = "") -> List[Dict]
     # Sort by book, chapter, verse for consistent output
     def sort_key(entry):
         # You might want to use book index instead of name for proper biblical order
-        book_index = next((idx for idx, b in enumerate(books) if b[0] == entry["book"]), -1)
+        book_index = next((idx for idx, b in enumerate(books) if b['id'] == entry['book_id']), -1)
         return (book_index, entry["chapter"], entry["verse"])
     
     result.sort(key=sort_key)
@@ -125,42 +150,52 @@ def merge_corpus(corpus_entries: List[Dict], msg_prefix: str = "") -> List[Dict]
     return result
 
 
-def process_book(book: BookInfo, version: VersionInfo, batch_idx: int, total_of_batches: int, batch_msg: str):
+def process_book(
+    book: BookInfo,
+    version: VersionInfo,
+    start_chapter: int,
+    end_chapter: int,
+    batch_idx: int,
+    total_of_batches: int,
+    batch_msg: str
+    ) -> List[EntryType]:
     """Process a single book for a version and return corpus entries."""
-    full_name, abbrev, start_chapter, end_chapter = book
+    full_name = book["name"]
+    abbrev = book["abbr"]
+    book_id = book["id"]
+    
     version_id = version["id"]
     suffix = version["suffix"]
-    corpus_entries = []
+    corpus_entries: List[EntryType] = []
     error_count = 0   
     
     with sync_playwright() as p:  # Create a new Playwright instance per thread        
-        browser, context = get_new_context(playwright=p, headless=True, msg_prefix=batch_msg)          
+        browser, context = get_new_context(playwright=p, headless=False, msg_prefix=batch_msg)          
         page = context.new_page()
 
         for chapter in range(start_chapter, end_chapter + 1):  # Process all chapters
             _batch_msg = f"{batch_msg[:-2]} {chapter} |"
-            try:
-           
-                logger.info(f"{_batch_msg} Processing version: {version['name']} {batch_idx}/{total_of_batches}")
+            try:           
+                logger.info(f"{_batch_msg} {batch_idx}/{total_of_batches} Processing version: {version['name']} {chapter}/{end_chapter}")
                 scheduler.ensure_batch_interval(_batch_msg)       
                
                 url = get_url(version_id=version_id, abbrev=abbrev, chapter=chapter, suffix=suffix)
-                verses = fetch_chapter(page=page, url=url, full_name=full_name, chapter=chapter, total_of_chapters=end_chapter, msg=_batch_msg)
+                verses = fetch_chapter(page=page, url=url, full_name=full_name, chapter=chapter, total_of_chapters=end_chapter, batches_asleep=scheduler.get_sleeping_batches_count(), msg=_batch_msg)
                 if verses:
                     logger.debug(f"{_batch_msg} Chapter {chapter}: {len(verses)} verses extracted.")
                     bible_suffix_key = f"{suffix.lower()}{POSTFIX}"
                     for verse_num, verse_text in enumerate(verses, 1):
                         # logger.debug(f"{_batch_msg} Verse {verse_num}: {verse_text[:50]}...")
-                        corpus_entries.append({
-                            "book": full_name,
+                        corpus_entries.append({     
                             "chapter": chapter,
                             "verse": verse_num,
+                            "book_name": full_name,
+                            "book_id": book_id,
                             bible_suffix_key: clean_text(verse_text)
                         })
                 else:
-                    warning_msg = f"{_batch_msg} No verses found for {full_name} {chapter} ({version['name']})"
-                    take_screenshot(page, filename=warning_msg, msg_prefix=_batch_msg)    
-                    logger.warning(f"{warning_msg}")
+                    raise NotFoundException(f"No verses extracted for {full_name} {chapter}.")  
+                    
             except Exception as e:
                 error_msg = f'{_batch_msg} {str(e)}'
                 error_count += 1
@@ -169,20 +204,21 @@ def process_book(book: BookInfo, version: VersionInfo, batch_idx: int, total_of_
         
         context.close()
         browser.close()        
-        scheduler.ensure_interval_before_next_batch(batch_idx, total_of_batches, batch_msg)
+        if error_count == 0:
+            scheduler.ensure_interval_before_next_batch(total_of_batches, batch_msg)
         logger.debug(f"{batch_msg} Filtering logs.")
-        batch_msg = batch_msg[:-3]
+        batch_msg = batch_msg.split('|')[0]
         translation_logger.filter_log(
             filter_func=lambda line: batch_msg in line,
             new_filename=batch_msg if error_count < 1 else f"{batch_msg}_err",
+            output_folder="filtered_logs",
             msg=_batch_msg
         )
              
-    return corpus_entries, full_name
+    return corpus_entries
 
 
-def process_task(task_queue: queue.Queue[Tuple[int, BookInfo, VersionInfo]], result_queue: queue.Queue):
-    corpus_entries = []
+def process_task(worker_id: int, task_queue: queue.Queue[TaskType], result_queue: queue.Queue, total_of_batches: int ):
     batch_msg = ""
     
     while True:       
@@ -192,26 +228,34 @@ def process_task(task_queue: queue.Queue[Tuple[int, BookInfo, VersionInfo]], res
                 task_queue.task_done()
                 break
            
-            book_idx, book, version = task
-            batch_msg = f'Batch {book_idx} {version["suffix"]} {book[1]} |'
+            task_id, book, version, start_chapter, end_chapter = task
+            batch_msg = f"Worker {worker_id} Batch {task_id} {version['suffix']} {book['abbr']} |"
            
             
-            book_entries, book_name = process_book(book, version, book_idx, task_queue.qsize(), batch_msg)           
-            
-            corpus_entries.extend(book_entries)
-            
+            book_entries = process_book(
+                book=book,
+                version=version,
+                start_chapter=start_chapter,
+                end_chapter=end_chapter,
+                batch_idx=task_id,
+                total_of_batches=total_of_batches,
+                batch_msg=batch_msg
+            )           
+                        
             result_queue.put({
+                'book_id': book['id'],
                 'version': version,
                 'book': book,
                 'entries': book_entries,
-                'book_name': book_name
+                'book_name': book['name']
             })
             
             task_queue.task_done()
-        except queue.Empty:
+        except queue.Empty as e:
+            logger.warning(f"Worker {worker_id} Batch is empty: {str(e)}")
             break
         except Exception as e:
-            logger.error(f"{batch_msg} Worker error: {str(e)}")
+            logger.error(f"Worker {worker_id} error: {str(e)}")
             task_queue.task_done()
   
 def split_chapters_evenly(total_chapters: int, max_chapters_per_task: int = 20) -> List[Tuple[int, int]]:
@@ -250,34 +294,48 @@ def split_chapters_evenly(total_chapters: int, max_chapters_per_task: int = 20) 
 def main():
     # Process versions concurrently using ThreadPoolExecutor
     # Define the names of the four gospels
-    # gospel_names = ["1 Maccabees", "2 Maccabees", "Tobit", "Judith", "Sirach"]
+    gospel_names = ["Romans", "Mark", "Luke"]
 
     # Use a list comprehension to filter the original list
     # The BookInfo tuples are structured as: (Name, Abbreviation, Chapters, Index)
        
     
-    # gospels = [book for book in books if book[0] in gospel_names]
-    
-    
-    task_queue = queue.Queue()
-    result_queue = queue.Queue()
-    task_id = 1
+    gospels = [book for book in books if book['name'] in gospel_names]
+
+
+    task_queue = queue.Queue[TaskType]()
+    result_queue = queue.Queue[TaskResultType]()
+   
+    temp_list = []
     # Example usage in your loop
     for version in VERSIONS:
-        for book in books:
-            book_name, book_abbrev, total_chapters = book[0], book[1], book[2]
-            
+        for book in gospels:
+            book_name = book["name"]
+            book_abbrev = book["abbr"]
+            total_chapters = book["chapters"]
+            book_id = book["id"]
+        
             # Get chapter ranges for this book
             chapter_ranges = split_chapters_evenly(total_chapters, max_chapters_per_task=CONFIG['batch_size'])
             
             # Create tasks for each range
             for start_chapter, end_chapter in chapter_ranges:
-                task_queue.put((task_id, (book_name, book_abbrev, start_chapter, end_chapter), version))
-                task_id += 1      
-        
+                temp_list.append((book, version, start_chapter, end_chapter))
+               
+    # shuffle them first so you wont repeat the requests in the same order all the time             
+    random.shuffle(temp_list) 
+  
+    for task_id, item in enumerate(temp_list, 1):
+        task_queue.put((task_id, ) + item)
+       
+    
     workers = []
-    for _ in range(min(CONFIG['max_workers'], task_queue.qsize())):
-        worker_thread = threading.Thread(target=process_task, args=(task_queue, result_queue))
+    task_queue_size = task_queue.qsize() + 1
+    
+    scheduler.set_max_workers(min(CONFIG['max_workers'], task_queue_size))
+    
+    for worker_id in range(1, scheduler.max_workers):
+        worker_thread = threading.Thread(target=process_task, args=(worker_id, task_queue, result_queue, task_queue_size))
         worker_thread.start()
         workers.append(worker_thread)
     

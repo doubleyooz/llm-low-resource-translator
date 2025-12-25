@@ -26,11 +26,11 @@ def take_screenshot(page: Page, filename: str, msg_prefix: str = "") -> None:
     filename = sanitize_txt(filename).removeprefix(msg_prefix)
     page.screenshot(path=f"{translation_logger.get_filepath()}/screenshots/{msg_prefix}_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
 
-def get_random_delay(delay_range: Tuple[float, float] = None, fatigue: float = 1, msg: str = "") -> None:
+def get_random_delay(delay_range: Tuple[float, float] = None, fatigue: float = 1, msg: str = "", verbose: bool = False) -> None:
     if delay_range is None or len(delay_range) != 2:
         delay_range = CONFIG["interaction_delay_range"]
     delay = random.uniform(*delay_range) * set_fatigue(fatigue)
-    if fatigue > 1:
+    if fatigue > 1 or verbose:
         logger.info(f"{msg} Sleeping {delay:.1f}s (fatigue mode)") 
 
     time.sleep(delay)

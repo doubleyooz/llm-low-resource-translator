@@ -1,9 +1,11 @@
+import random
 from typing import Dict, List, Tuple
 from playwright.sync_api import sync_playwright, Page
 
 
 
 # Import the singleton logger
+from constants.bibles import DEFAULT, FASTER, SLOWER
 from logger import translation_logger
 from utils.pw_helper import get_random_delay, perform_action, take_screenshot
 from pw_user_sim import simulate_human
@@ -33,7 +35,7 @@ def get_url(version_id: str, abbrev: str, chapter: int, suffix: str) -> str:
 
 
 
-def fetch_chapter(page: Page, full_name: str, url: str, chapter: int, total_of_chapters: int, msg: str = "") -> List[str]:
+def fetch_chapter(page: Page, full_name: str, url: str, chapter: int, total_of_chapters: int, batches_asleep: int = 0, msg: str = "") -> List[str]:
     """Fetch and extract verses for a single chapter with retries."""
 
     logger.info(f"{msg} Fetching {chapter}/{total_of_chapters}: {url}")
@@ -47,7 +49,18 @@ def fetch_chapter(page: Page, full_name: str, url: str, chapter: int, total_of_c
                 logger.warning(f"{msg} {error_msg}")
                 raise NotFoundException(error_msg)
             
-            simulate_human(page, selectors=SAFE_CLICK_SELECTORS, msg=msg)
+            chance_to_scroll = 0.9
+            speed = DEFAULT
+            
+            if batches_asleep > 5:
+                speed = FASTER
+                chance_to_scroll = 0.7
+            elif batches_asleep == 0:
+                chance_to_scroll = 0.95
+                speed = SLOWER
+            
+            if random.random() < chance_to_scroll:                  
+                simulate_human(page, selectors=SAFE_CLICK_SELECTORS, msg=msg, speed=speed)
             return extract_verses(page, msg=msg)
         except NotFoundException as nf:
             raise nf

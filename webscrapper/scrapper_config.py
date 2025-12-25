@@ -6,7 +6,7 @@ CONFIG = {
     "new_request_delay_range": (3, 15),  # Delay range between requests
     "retry_attempts": 2,       # Retry attempts for failed requests
     "retry_delay_range": (4, 16),  # Delay range between retries
-    "new_batch_delay_range": (80, 250),  # Delay range between batches
+    "new_batch_delay_range": (60, 180),  # Delay range between batches
     "scroll_amount_range": (20, 400),  # Range for scroll amount
     "scroll_back_probability": 0.3,    # Probability of scrolling backward
     "min_batch_interval": 1,  # Minimum interval between requests
@@ -16,8 +16,8 @@ CONFIG = {
     "mouse_move_range_y": (-100, 700),  # Y-coordinate range for mouse movement
   
     "max_scroll_iterations": 39,     # Prevent infinite scroll loops
-    "max_workers": 14,                    # Concurrent translation workers
-    "batch_size": 13,                    # Sentences per context (proxy switch)    
+    "max_workers": 20,                    # Concurrent translation workers
+    "batch_size": 6,                    # Sentences per context (proxy switch)    
     "sentences_per_request_range": (1, 1),         # Sentences per translation request
     "proxy_rotation": False,    
     
