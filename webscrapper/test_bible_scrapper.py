@@ -45,9 +45,12 @@ TaskType = Tuple[int, BookInfo, VersionInfo, int, int]
 
 
 scheduler = BatchScheduler(max_workers=CONFIG['max_workers'])
-
+def sort_key(entry: EntryType):
+    # You might want to use book index instead of name for proper biblical order
+    book_index = next((idx for idx, b in enumerate(books) if b['id'] == entry['book_id']), -1)
+    return (book_index, entry["chapter"], entry["verse"])
     
-def save_to_txt(book_entries: List[str], book_title: str, version: VersionInfo, msg_prefix: str = '') -> None:  
+def save_to_txt(book_entries: List[EntryType], book_title: str, version: VersionInfo, msg_prefix: str = '') -> None:  
     # Get file path and ensure directory exists
     output_dir = translation_logger.get_filepath()
     os.makedirs(output_dir, exist_ok=True)
@@ -64,22 +67,39 @@ def save_to_txt(book_entries: List[str], book_title: str, version: VersionInfo, 
         
         try:                      
             # Write to file
-            book_verses = {}
+            book_verses = {}          
             
+            # book_entries.sort(key=sort_key)           
+
             for entry in book_entries:
                 chapter = entry["chapter"]
-                if chapter not in book_verses:
-                    book_verses[chapter] = []
-                book_verses[chapter].append((entry["verse"], entry[suffix_key]))
+                book_id = entry["book_id"]
+                if book_id not in book_verses:
+                    book_verses[book_id] = {}
+                    
+                if chapter not in book_verses[book_id]:
+                    book_verses[book_id][chapter] = []
+                book_verses[book_id][chapter].append((entry["verse"], entry[suffix_key]))
+                    # Sort books in order
+            sorted_book_ids = sorted(book_verses.keys(), 
+                key=lambda bid: next(idx for idx, b in enumerate(books) if b['id'] == bid))
+           
             logger.debug(f"Writing book: {book_title}")
-            f.write(f"{book_title}\n{'='*50}\n\n")
-        
-            for chapter in sorted(book_verses.keys()):
-                f.write(f"Chapter {chapter}\n{'-'*20}\n")
-                f.write("\n".join(f"{num} {text}" for num, text in sorted(book_verses[chapter])))
-                f.write("\n\n")
-            
-            f.write("\n")
+            for book_id in sorted_book_ids:
+                book_name = next(b['name'] for b in books if b['id'] == book_id)
+                chapters = book_verses[book_id]
+
+                f.write(f"{book_name}\n{'=' * 50}\n\n")
+
+                for chapter in sorted(chapters.keys()):
+                    f.write(f"Chapter {chapter}\n{'-' * 20}\n")
+                    verses = sorted(chapters[chapter])
+                    f.write("\n".join(f"{num} {text}" for num, text in verses))
+                    f.write("\n\n")
+
+                f.write("\n")
+           
+           
             logger.info(f"Finished {version_name}! Check {output_file}")
         except Exception as e:
             logger.error(f"Error processing book {book_title} ({version_name}): {str(e)}")
@@ -123,12 +143,6 @@ def merge_corpus(corpus_entries: List[EntryType], msg_prefix: str = "") -> List[
      # Convert to list and sort for consistent output
     result = list(merged_corpus.values())
     
-    # Sort by book, chapter, verse for consistent output
-    def sort_key(entry):
-        # You might want to use book index instead of name for proper biblical order
-        book_index = next((idx for idx, b in enumerate(books) if b['id'] == entry['book_id']), -1)
-        return (book_index, entry["chapter"], entry["verse"])
-    
     result.sort(key=sort_key)
     
     # Log detailed statistics
@@ -170,7 +184,7 @@ def process_book(
     error_count = 0   
     
     with sync_playwright() as p:  # Create a new Playwright instance per thread        
-        browser, context = get_new_context(playwright=p, headless=False, msg_prefix=batch_msg)          
+        browser, context = get_new_context(playwright=p, headless=True, msg_prefix=batch_msg)          
         page = context.new_page()
 
         for chapter in range(start_chapter, end_chapter + 1):  # Process all chapters
@@ -294,7 +308,7 @@ def split_chapters_evenly(total_chapters: int, max_chapters_per_task: int = 20) 
 def main():
     # Process versions concurrently using ThreadPoolExecutor
     # Define the names of the four gospels
-    gospel_names = ["Romans", "Mark", "Luke"]
+    gospel_names = ["Romans", "Mark", "Luke" "1 Maccabees", "2 Maccabees", "Matthew", "John"]
 
     # Use a list comprehension to filter the original list
     # The BookInfo tuples are structured as: (Name, Abbreviation, Chapters, Index)
@@ -333,8 +347,8 @@ def main():
     task_queue_size = task_queue.qsize() + 1
     
     scheduler.set_max_workers(min(CONFIG['max_workers'], task_queue_size))
-    
-    for worker_id in range(1, scheduler.max_workers):
+    logger.info(f"Starting download with {scheduler.max_workers} workers and {task_queue_size} tasks.")
+    for worker_id in range(1, scheduler.max_workers + 1):
         worker_thread = threading.Thread(target=process_task, args=(worker_id, task_queue, result_queue, task_queue_size))
         worker_thread.start()
         workers.append(worker_thread)
