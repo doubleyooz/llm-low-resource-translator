@@ -39,9 +39,7 @@ class EntryType(TypedDict, extra_items=str):
     verse: int
     book_name: str
     book_id: int
-    
-   
-    
+ 
     
 TaskType = Tuple[int, BookInfo, VersionInfo, int, int]
 
@@ -362,13 +360,13 @@ def split_chapters_evenly(total_chapters: int, max_chapters_per_task: int = 20) 
 def main():
     # Process versions concurrently using ThreadPoolExecutor
     # Define the names of the four gospels
-    gospel_names = ["Romans", "Mark", "Luke" "1 Maccabees", "2 Maccabees", "Matthew", "John"]
+    # gospel_names = ["Romans", "Mark", "Luke" "1 Maccabees", "2 Maccabees", "Matthew", "John"]
 
     # Use a list comprehension to filter the original list
     # The BookInfo tuples are structured as: (Name, Abbreviation, Chapters, Index)
        
     
-    gospels = [book for book in books if book['name'] in gospel_names]
+    # gospels = [book for book in books if book['name'] in gospel_names]
 
 
     task_queue = queue.Queue[TaskType]()
@@ -377,7 +375,7 @@ def main():
     temp_list = []
     # Example usage in your loop
     for version in VERSIONS:
-        for book in gospels:
+        for book in books:
             book_name = book["name"]
             book_abbrev = book["abbr"]
             total_chapters = book["chapters"]
