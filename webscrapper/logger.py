@@ -63,7 +63,7 @@ class SingletonLogger:
         else:
             self._log_filename =  f"{hash(f'{current_date}_{output_folder}')}_{current_date}"
               
-
+        self._log_filename = sanitize_txt( self._log_filename)
         # Create log filename with timestamp
         self._filepath = os.path.join(
             output_folder,
@@ -76,7 +76,7 @@ class SingletonLogger:
         self._log_filename = os.path.join(
             output_folder,
             self._log_filename,
-            f"{self._log_filename}.{self._ext}"
+            f"{self._log_filename}{self._ext}"
         )
 
 

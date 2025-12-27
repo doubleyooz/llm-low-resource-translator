@@ -2,6 +2,42 @@ import os
 import re
 from typing import Optional
 
+
+def get_last_directory_alphabetic(folder_path):
+    """
+    Returns the name of the last subdirectory in the given folder_path
+    when sorted alphabetically. Returns None if the path is not a directory
+    or if there are no subdirectories.
+    
+    Parameters:
+        folder_path (str): The path to the folder to scan.
+    
+    Returns:
+        str or None: The name of the last subdirectory, or None if none found.
+    """
+    # Check if the path exists and is a directory
+    if not os.path.isdir(folder_path):
+        return None
+    
+    # Get all entries in the directory
+    entries = os.listdir(folder_path)
+    
+    # Filter only directories (subdirectories)
+    subdirs = [
+        entry for entry in entries
+        if os.path.isdir(os.path.join(folder_path, entry))
+    ]
+    
+    # If no subdirectories, return None
+    if not subdirs:
+        return None
+    
+    # Sort alphabetically (case-sensitive: A-Z before a-z)
+    subdirs.sort()
+    
+    # Return the last one
+    return subdirs[-2]
+
 def sanitize_txt(text: str, max_length: int = 80) -> str:
     """
     Very conservative sanitization - only allows alphanumeric, underscore, hyphen, and dot.

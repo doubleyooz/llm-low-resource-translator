@@ -16,7 +16,7 @@ from scrapper_korpus_kernewek import get_url, translate_sentence
 from scrapper_korpus_kernewek import wordbank
 
 from logger import translation_logger
-from utils.batch_handling import BatchScheduler
+from utils.batch_scheduler import BatchScheduler
 from utils.csv_helper import save_batch_to_csv
 from utils.json_helper import save_batch_to_json
 from utils.pw_helper import take_screenshot, get_random_delay, perform_action

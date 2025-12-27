@@ -1,12 +1,13 @@
 import json
-import hashlib
 from collections import OrderedDict
+import os
 from pathlib import Path
 from typing import Dict, List
 
 from constants.languages import OL, SL, TL
 from constants.output import LOG_FILENAME, OUTPUT_FOLDER
 from logger import translation_logger
+from utils.txt_helper import sanitize_txt
 
 logger = translation_logger.get_logger(
     output_folder=OUTPUT_FOLDER,
@@ -105,16 +106,31 @@ def remove_duplicates_json(
     
 
 
-def save_batch_to_json(batch_results: List[Dict], filename: str, msg_prefix: str = 'Saving as json | ', indent: int = 2):
-    
+def save_batch_to_json(batch_results: List[Dict], filename: str, output_folder: str = None, msg_prefix: str = 'Saving as json |', indent: int = 2):
+  
+    filename = sanitize_txt(filename)
+   
     filename = Path(filename).name
     
     if not filename.lower().endswith('.json'):
         filename = f"{Path(filename).stem}.json"
     
+    base_path = Path(translation_logger.get_filepath())
     try:        
-        base_path = Path(translation_logger.get_filepath())
-        json_file_path = base_path / filename
+        if output_folder:
+            output_folder = sanitize_txt(output_folder)
+            
+            target_dir = (base_path / output_folder).resolve()
+            # Ensure it is still under the logger's base directory
+            try:
+                target_dir.relative_to(base_path.resolve())
+            except ValueError:
+                logger.warning(f"{msg_prefix} output_folder escapes base directory; falling back to base")
+                target_dir = base_path
+        else:
+            target_dir = base_path
+
+        json_file_path = target_dir / filename
         
         # Create directory if needed
         json_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -135,7 +151,7 @@ def save_batch_to_json(batch_results: List[Dict], filename: str, msg_prefix: str
             logger.error(f"{msg_prefix} File was created but appears to be empty: {json_file_path}")
             return None 
          
-    except (IOError, json.JSONEncodeError) as e:
+    except (OSError, json.JSONEncodeError) as e:
         logger.error(f"{msg_prefix} Failed to save {filename}: {e}")
         return None
 

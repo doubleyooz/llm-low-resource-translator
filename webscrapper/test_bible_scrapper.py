@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 import queue
 import random
 import threading
@@ -14,10 +16,10 @@ from pw_context import get_new_context
 from scrapper_bible_com import fetch_chapter, get_url
 from scrapper_config import CONFIG
 from logger import translation_logger
-from utils.batch_handling import BatchScheduler
+from utils.batch_scheduler import BatchScheduler
 from utils.json_helper import save_batch_to_json
 from utils.pw_helper import take_screenshot
-from utils.txt_helper import clean_text
+from utils.txt_helper import clean_text, get_last_directory_alphabetic
 
 logger = translation_logger.get_logger(
     output_folder=OUTPUT_FOLDER,
@@ -163,6 +165,47 @@ def merge_corpus(corpus_entries: List[EntryType], msg_prefix: str = "") -> List[
     
     return result
 
+def get_latest_iteration(suffix: str, abbrev: str, start_chapter: int, end_chapter: int, batch_msg: str) -> Tuple[List[EntryType], int]:
+    last_iteration = get_last_directory_alphabetic("output/bibles")
+    logger.warning(f"{batch_msg} Checking for previous iteration: {last_iteration}")
+    corpus_entries = []
+    error_count = 0
+    if last_iteration:
+        prev_partial_dir = Path("output/bibles") / last_iteration / "partial_results"
+        logger.warning(f"{batch_msg} Looking for previous partial results in: {prev_partial_dir}")
+        if prev_partial_dir.exists():
+            # Expected filename pattern:
+            # Something like: Worker_X_Batch_..._{suffix}_{abbrev}_chapters_{start}-{end}.json
+            # We'll build the expected pattern from current batch info
+            expected_pattern = f"*{suffix.upper()}*{abbrev.upper()}*chapters_{start_chapter}-{end_chapter}*.json"
+            
+            matching_files = list(prev_partial_dir.glob(expected_pattern))
+            
+            if matching_files:
+                # Found one or more matching files — assume the work is already done
+                latest_match = max(matching_files, key=lambda p: p.stat().st_mtime)  # most recent if multiple
+                logger.info(f"{batch_msg} Found existing complete results: {latest_match.name}")
+                logger.info(f"{batch_msg} Skipping processing — reusing existing data.")
+                
+                try:
+                    with open(latest_match, "r", encoding="utf-8") as f:
+                        corpus_entries = json.load(f)
+                    logger.info(f"{batch_msg} Loaded {len(corpus_entries)} existing entries from previous run.")
+
+                except Exception as e:
+                    logger.error(f"{batch_msg} Failed to load existing JSON {latest_match}: {e}")
+                    error_count += 1
+                    # Fall through to normal processing
+            else:
+                logger.info(f"{batch_msg} No matching completed batch found in previous iteration {expected_pattern}. Starting fresh.")
+        else:
+            logger.info(f"{batch_msg} No partial_results folder in previous iteration.")
+    else:
+        logger.info(f"{batch_msg} No previous iteration found. Starting fresh.")
+        
+    return corpus_entries, error_count
+    
+
 
 def process_book(
     book: BookInfo,
@@ -173,61 +216,67 @@ def process_book(
     total_of_batches: int,
     batch_msg: str
     ) -> List[EntryType]:
-    """Process a single book for a version and return corpus entries."""
+
     full_name = book["name"]
     abbrev = book["abbr"]
     book_id = book["id"]
     
     version_id = version["id"]
     suffix = version["suffix"]
-    corpus_entries: List[EntryType] = []
-    error_count = 0   
+      
+    corpus_entries, error_count = get_latest_iteration(suffix, abbrev, start_chapter, end_chapter, batch_msg)
     
-    with sync_playwright() as p:  # Create a new Playwright instance per thread        
-        browser, context = get_new_context(playwright=p, headless=True, msg_prefix=batch_msg)          
-        page = context.new_page()
-
-        for chapter in range(start_chapter, end_chapter + 1):  # Process all chapters
-            _batch_msg = f"{batch_msg[:-2]} {chapter} |"
-            try:           
-                logger.info(f"{_batch_msg} {batch_idx}/{total_of_batches} Processing version: {version['name']} {chapter}/{end_chapter}")
-                scheduler.ensure_batch_interval(_batch_msg)       
-               
-                url = get_url(version_id=version_id, abbrev=abbrev, chapter=chapter, suffix=suffix)
-                verses = fetch_chapter(page=page, url=url, full_name=full_name, chapter=chapter, total_of_chapters=end_chapter, batches_asleep=scheduler.get_sleeping_batches_count(), msg=_batch_msg)
-                if verses:
-                    logger.debug(f"{_batch_msg} Chapter {chapter}: {len(verses)} verses extracted.")
-                    bible_suffix_key = f"{suffix.lower()}{POSTFIX}"
-                    for verse_num, verse_text in enumerate(verses, 1):
-                        # logger.debug(f"{_batch_msg} Verse {verse_num}: {verse_text[:50]}...")
-                        corpus_entries.append({     
-                            "chapter": chapter,
-                            "verse": verse_num,
-                            "book_name": full_name,
-                            "book_id": book_id,
-                            bible_suffix_key: clean_text(verse_text)
-                        })
-                else:
-                    raise NotFoundException(f"No verses extracted for {full_name} {chapter}.")  
-                    
-            except Exception as e:
-                error_msg = f'{_batch_msg} {str(e)}'
-                error_count += 1
-                logger.error(error_msg)
-                take_screenshot(page, filename=error_msg, msg_prefix=_batch_msg)  
+    if not corpus_entries:        
+        with sync_playwright() as p:  # Create a new Playwright instance per thread        
+            browser, context = get_new_context(playwright=p, headless=True, msg_prefix=batch_msg)          
+            page = context.new_page()
         
-        context.close()
-        browser.close()        
-        if error_count == 0:
-            scheduler.ensure_interval_before_next_batch(total_of_batches, batch_msg)
-        logger.debug(f"{batch_msg} Filtering logs.")
-        batch_msg = batch_msg.split('|')[0]
-        translation_logger.filter_log(
-            filter_func=lambda line: batch_msg in line,
-            new_filename=batch_msg if error_count < 1 else f"{batch_msg}_err",
-            output_folder="filtered_logs",
-            msg=_batch_msg
+            for chapter in range(start_chapter, end_chapter + 1):  # Process all chapters
+                
+                try:           
+                    logger.info(f"{batch_msg} Processing version: {version['name']} {chapter}/{end_chapter}")
+                    scheduler.ensure_batch_interval(batch_msg)       
+                
+                    url = get_url(version_id=version_id, abbrev=abbrev, chapter=chapter, suffix=suffix)
+                    verses = fetch_chapter(page=page, url=url, full_name=full_name, chapter=chapter, total_of_chapters=end_chapter, batches_asleep=scheduler.get_sleeping_batches_count(), msg=batch_msg)
+                    if verses:
+                        logger.debug(f"{batch_msg} Chapter {chapter}: {len(verses)} verses extracted.")
+                        bible_suffix_key = f"{suffix.lower()}{POSTFIX}"
+                        for verse_num, verse_text in enumerate(verses, 1):
+                            # logger.debug(f"{batch_msg} Verse {verse_num}: {verse_text[:50]}...")
+                            corpus_entries.append({     
+                                "chapter": chapter,
+                                "verse": verse_num,
+                                "book_name": full_name,
+                                "book_id": book_id,
+                                bible_suffix_key: clean_text(verse_text)
+                            })                        
+                    else:
+                        raise NotFoundException(f"No verses extracted for {full_name} {chapter}.")  
+                        
+                except Exception as e:
+                    error_msg = f'{batch_msg} {str(e)}'
+                    error_count += 1
+                    logger.error(error_msg)
+                    take_screenshot(page, filename=error_msg, msg_prefix=batch_msg)  
+            
+            context.close()
+            browser.close()        
+    if error_count == 0:
+        scheduler.ensure_interval_before_next_batch(total_of_batches, batch_msg)
+        save_batch_to_json(
+            batch_results=corpus_entries,
+            filename=batch_msg,
+            output_folder="partial_results"
         )
+    logger.debug(f"{batch_msg} Filtering logs.")
+    batch_msg = batch_msg.split('|')[0]
+    translation_logger.filter_log(
+        filter_func=lambda line: batch_msg in line,
+        new_filename=batch_msg if error_count < 1 else f"{batch_msg}_err",
+        output_folder="filtered_logs",
+        msg=batch_msg
+    )
              
     return corpus_entries
 
@@ -243,9 +292,14 @@ def process_task(worker_id: int, task_queue: queue.Queue[TaskType], result_queue
                 break
            
             task_id, book, version, start_chapter, end_chapter = task
-            batch_msg = f"Worker {worker_id} Batch {task_id} {version['suffix']} {book['abbr']} |"
-           
             
+            batch_msg = (
+                f"Worker {worker_id} | "
+                f"Batch {task_id}/{total_of_batches} | "
+                f"{version['suffix']} {book['abbr']} "
+                f"chapters {start_chapter}-{end_chapter} |"
+            )
+                                 
             book_entries = process_book(
                 book=book,
                 version=version,
