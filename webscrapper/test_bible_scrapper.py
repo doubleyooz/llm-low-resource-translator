@@ -117,7 +117,6 @@ def merge_corpus(corpus_entries: List[EntryType], msg_prefix: str = "") -> List[
     unique_verses = set()
     
     for entry in corpus_entries:
-        print(entry)
         key = (entry["book_name"], entry["chapter"], entry["verse"])
         unique_verses.add(key)
         
@@ -223,12 +222,12 @@ def process_book(
     suffix = version["suffix"]
       
     corpus_entries, error_count = get_latest_iteration(suffix, abbrev, start_chapter, end_chapter, batch_msg)
-    
+        
     if not corpus_entries:        
         with sync_playwright() as p:  # Create a new Playwright instance per thread        
             browser, context = get_new_context(playwright=p, headless=True, msg_prefix=batch_msg)          
             page = context.new_page()
-        
+            error_count = 0
             for chapter in range(start_chapter, end_chapter + 1):  # Process all chapters
                 
                 try:           
@@ -259,13 +258,17 @@ def process_book(
                     take_screenshot(page, filename=error_msg, msg_prefix=batch_msg)  
             
             context.close()
-            browser.close()        
-    if error_count == 0:
-        scheduler.ensure_interval_before_next_batch(total_of_batches, batch_msg)
+            browser.close()
+        if error_count == 0:
+            scheduler.ensure_interval_before_next_batch(total_of_batches, batch_msg)
+   
+    if error_count == 0:  
         save_batch_to_json(
             batch_results=corpus_entries,
             filename=batch_msg,
-            output_folder="partial_results"
+            output_folder="partial_results",
+            msg_prefix=batch_msg
+            
         )
     logger.debug(f"{batch_msg} Filtering logs.")
     batch_msg = batch_msg.split('|')[0]

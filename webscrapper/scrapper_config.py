@@ -6,7 +6,7 @@ CONFIG = {
     "new_request_delay_range": (3, 15),  # Delay range between requests
     "retry_attempts": 2,       # Retry attempts for failed requests
     "retry_delay_range": (4, 16),  # Delay range between retries
-    "new_batch_delay_range": (60, 180),  # Delay range between batches
+    "new_batch_delay_range": (90, 240),  # Delay range between batches
     "scroll_amount_range": (20, 400),  # Range for scroll amount
     "scroll_back_probability": 0.3,    # Probability of scrolling backward
     "min_batch_interval": 1,  # Minimum interval between requests
