@@ -3,7 +3,7 @@ import re
 from typing import Optional
 
 
-def get_last_directory_alphabetic(folder_path):
+def get_last_directory_alphabetic(folder_path, second_last: bool = False) -> Optional[str]:
     """
     Returns the name of the last subdirectory in the given folder_path
     when sorted alphabetically. Returns None if the path is not a directory
@@ -36,7 +36,7 @@ def get_last_directory_alphabetic(folder_path):
     subdirs.sort()
     
     # Return the last one
-    return subdirs[-2]
+    return subdirs[-2] if second_last else subdirs[-1]
 
 def sanitize_txt(text: str, max_length: int = 80) -> str:
     """

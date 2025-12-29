@@ -163,12 +163,12 @@ def merge_corpus(corpus_entries: List[EntryType], msg_prefix: str = "") -> List[
     return result
 
 def get_latest_iteration(suffix: str, abbrev: str, start_chapter: int, end_chapter: int, batch_msg: str) -> Tuple[List[EntryType], int]:
-    last_iteration = get_last_directory_alphabetic("output/bibles")
+    last_iteration = get_last_directory_alphabetic(OUTPUT_FOLDER, second_last=True)
     logger.warning(f"{batch_msg} Checking for previous iteration: {last_iteration}")
     corpus_entries = []
     error_count = 0
     if last_iteration:
-        prev_partial_dir = Path("output/bibles") / last_iteration / "partial_results"
+        prev_partial_dir = Path(OUTPUT_FOLDER) / last_iteration / "partial_results"
         logger.warning(f"{batch_msg} Looking for previous partial results in: {prev_partial_dir}")
         if prev_partial_dir.exists():
             # Expected filename pattern:
