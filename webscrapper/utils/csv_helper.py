@@ -1,4 +1,5 @@
 import csv
+import os
 import pandas as pd
 
 from pathlib import Path
@@ -66,6 +67,7 @@ def save_batch_to_csv(
     batch_results: List[Dict],
     filename: str,
     columns: List[str],    
+    output_folder: str = None,
     dedup_columns: Optional[List[str]] = [], # if None → dedup on all columns, if [] → no dedup
     msg_prefix: str = 'Saving as csv | ',
     add_timestamp: bool = False
@@ -75,12 +77,29 @@ def save_batch_to_csv(
     if add_timestamp:
         current_date = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"{filename}_{current_date}"
-        
+
     csv_filename = f"{filename}.csv" 
     
     try:        
-        base_path = Path(translation_logger.get_filepath())
-        csv_file_path = base_path / csv_filename
+        base_path = Path(translation_logger.get_filepath())       
+        
+        if output_folder:
+            output_folder = sanitize_txt(output_folder)
+            target_dir = (base_path / output_folder).resolve()
+            # Ensure it stays under the logger base directory
+            try:
+                target_dir.relative_to(base_path.resolve())
+            except ValueError:
+                logger.warning(f"{msg_prefix} output_folder escapes base directory; falling back to base")
+                target_dir = base_path
+        else:
+            target_dir = base_path
+        
+        # Ensure output folder exists        
+        os.makedirs(target_dir, exist_ok=True)
+        
+        
+        csv_file_path = target_dir / csv_filename
         csv_file_path.parent.mkdir(parents=True, exist_ok=True)
         
         if not batch_results:

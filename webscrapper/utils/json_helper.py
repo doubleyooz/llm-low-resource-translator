@@ -1,4 +1,5 @@
 import json
+import os
 from collections import OrderedDict
 
 from pathlib import Path
@@ -170,6 +171,11 @@ def save_batch_to_json(
         else:
             target_dir = base_path
 
+        
+        # Ensure output folder exists        
+        os.makedirs(target_dir, exist_ok=True)
+        
+        
         json_file_path = target_dir / filename
         json_file_path.parent.mkdir(parents=True, exist_ok=True)
 

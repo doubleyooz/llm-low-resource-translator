@@ -211,7 +211,8 @@ def process_task(
     result_queue: queue.Queue[TaskResultType],
     total_of_batches: int
     ) -> None:
-
+    batch_msg = "Worker {worker_id} | "
+    
     while True:       
         try:
             task = task_queue.get(timeout=10)  # Wait for task
@@ -376,22 +377,34 @@ def main():
         return_all_matches=True
     )
     
+
     filtered_sl = []
     filtered_ol = []
     
     corpus_entries = clean_corpus_entries(corpus_entries)
-    
+    logger.info(f"Number of corpus entries: {len(corpus_entries):,}")
+    if corpus_entries:
+        logger.info(f"First pair: {corpus_entries[0]}")
+        logger.info(f"First corpus entry keys: {list(corpus_entries[0].keys())}")
+
+
+    existing_pairs = {(entry[SL], entry[OL]) for entry in corpus_entries}
+
+    # remove all items found in corpus_entries from data[SL] and data[OL]
     for sl_sent, ol_sent in zip(data[SL], data[OL]):
-        if (sl_sent, ol_sent) not in corpus_entries:
+        # print(f"Checking if ({sl_sent}, {ol_sent}) is in corpus entries...")
+        if (sl_sent, ol_sent) not in existing_pairs:
             filtered_sl.append(sl_sent)
-            filtered_ol.append(ol_sent)
-    
+            filtered_ol.append(ol_sent)           
+     
+    logger.info(f"After removing existing entries from previous runs:")
+    logger.info(f"{len(filtered_ol):,}/{len(data[OL]):,} original language sentences total")
+    logger.info(f"{len(filtered_sl):,}/{len(data[SL]):,} target language sentences total")
+                 
     data[SL] = filtered_sl
     data[OL] = filtered_ol
     
     # Merge the lists using zip()
-    logger.info(f"After removing existing entries from previous runs: {len(data[SL]):,}/{len(data[OL]):,} sentences total")
-    
     merged_list = []
     for sl, ol in zip(data[SL], data[OL]):
         merged_list.append({SL: sl, OL: ol})

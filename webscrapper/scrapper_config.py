@@ -17,7 +17,7 @@ CONFIG = {
   
     "max_scroll_iterations": 39,     # Prevent infinite scroll loops
     "max_workers": 14,                    # Concurrent translation workers
-    "batch_size": 150,                    # Sentences per context (proxy switch)    
+    "batch_size": 30,                    # Sentences per context (proxy switch)    
     "sentences_per_request_range": (10, 25),         # Sentences per translation request
     "proxy_rotation": False,    
     
