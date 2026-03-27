@@ -1,6 +1,5 @@
-import json
+
 import os
-from pathlib import Path
 import queue
 import random
 import threading
@@ -20,6 +19,7 @@ from utils.batch_scheduler import BatchScheduler
 from utils.json_helper import save_batch_to_json
 from utils.pw_helper import take_screenshot
 from utils.txt_helper import clean_text, get_last_directory_alphabetic
+from utils.worker_helper import get_latest_iteration
 
 logger = translation_logger.get_logger(
     output_folder=OUTPUT_FOLDER,
@@ -162,46 +162,6 @@ def merge_corpus(corpus_entries: List[EntryType], msg_prefix: str = "") -> List[
     
     return result
 
-def get_latest_iteration(suffix: str, abbrev: str, start_chapter: int, end_chapter: int, batch_msg: str) -> Tuple[List[EntryType], int]:
-    last_iteration = get_last_directory_alphabetic(OUTPUT_FOLDER, second_last=True)
-    logger.warning(f"{batch_msg} Checking for previous iteration: {last_iteration}")
-    corpus_entries = []
-    error_count = 0
-    if last_iteration:
-        prev_partial_dir = Path(OUTPUT_FOLDER) / last_iteration / "partial_results"
-        logger.warning(f"{batch_msg} Looking for previous partial results in: {prev_partial_dir}")
-        if prev_partial_dir.exists():
-            # Expected filename pattern:
-            # Something like: Worker_X_Batch_..._{suffix}_{abbrev}_chapters_{start}-{end}.json
-            # We'll build the expected pattern from current batch info
-            expected_pattern = f"*{suffix.upper()}*{abbrev.upper()}*chapters_{start_chapter}-{end_chapter}*.json"
-            
-            matching_files = list(prev_partial_dir.glob(expected_pattern))
-            
-            if matching_files:
-                # Found one or more matching files — assume the work is already done
-                latest_match = max(matching_files, key=lambda p: p.stat().st_mtime)  # most recent if multiple
-                logger.info(f"{batch_msg} Found existing complete results: {latest_match.name}")
-                logger.info(f"{batch_msg} Skipping processing — reusing existing data.")
-                
-                try:
-                    with open(latest_match, "r", encoding="utf-8") as f:
-                        corpus_entries = json.load(f)
-                    logger.info(f"{batch_msg} Loaded {len(corpus_entries)} existing entries from previous run.")
-
-                except Exception as e:
-                    logger.error(f"{batch_msg} Failed to load existing JSON {latest_match}: {e}")
-                    error_count += 1
-                    # Fall through to normal processing
-            else:
-                logger.info(f"{batch_msg} No matching completed batch found in previous iteration {expected_pattern}. Starting fresh.")
-        else:
-            logger.info(f"{batch_msg} No partial_results folder in previous iteration.")
-    else:
-        logger.info(f"{batch_msg} No previous iteration found. Starting fresh.")
-        
-    return corpus_entries, error_count
-    
 
 
 def process_book(
@@ -221,7 +181,13 @@ def process_book(
     version_id = version["id"]
     suffix = version["suffix"]
       
-    corpus_entries, error_count = get_latest_iteration(suffix, abbrev, start_chapter, end_chapter, batch_msg)
+      
+    expected_pattern = f"*{suffix.upper()}*{abbrev.upper()}*chapters_{start_chapter}-{end_chapter}*.json"
+             
+    corpus_entries, error_count = get_latest_iteration(
+        expected_pattern=expected_pattern,
+        batch_msg=batch_msg,
+    )
         
     if not corpus_entries:        
         with sync_playwright() as p:  # Create a new Playwright instance per thread        

@@ -38,12 +38,16 @@ def get_last_directory_alphabetic(folder_path, second_last: bool = False) -> Opt
     # Return the last one
     return subdirs[-2] if second_last else subdirs[-1]
 
-def sanitize_txt(text: str, max_length: int = 80) -> str:
+def sanitize_txt(text: str, max_length: int = 80, remove_extension: bool = True) -> str:
     """
     Very conservative sanitization - only allows alphanumeric, underscore, hyphen, and dot.
     """
     if not text:
         return "unnamed"
+
+    if remove_extension:
+        name, ext = os.path.splitext(text)
+        text = name
     
     # Only keep safe characters
     sanitized = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', text)

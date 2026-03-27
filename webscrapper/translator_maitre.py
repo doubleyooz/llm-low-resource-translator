@@ -2,25 +2,31 @@
 import pandas as pd
 import os
 import random
+import queue
+import threading
 
+from datasets import Dataset, load_dataset
 from playwright.sync_api import sync_playwright
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, TypedDict
 
 from constants.output import LOG_FILENAME, OUTPUT_FOLDER
 from constants.languages import SL, TL, OL
 from exceptions.not_found_exception import NotFoundException
 from pw_context import get_new_context
 from scrapper_config import CONFIG
-from scrapper_korpus_kernewek import get_url, translate_sentence
-from scrapper_korpus_kernewek import wordbank
+from scrapper_google_translate import get_url, translate_sentence
+# from scrapper_korpus_kernewek import get_url, translate_sentence
+# from scrapper_korpus_kernewek import wordbank
 
 from logger import translation_logger
 from utils.batch_scheduler import BatchScheduler
 from utils.csv_helper import save_batch_to_csv
 from utils.json_helper import save_batch_to_json
-from utils.pw_helper import take_screenshot, get_random_delay, perform_action
-from utils.txt_helper import clean_text
+from utils.list_helper import remove_duplicates_from_list
+from utils.pw_helper import handle_cookies_request, take_screenshot, get_random_delay, perform_action
+from utils.txt_helper import clean_text, get_last_directory_alphabetic
+from utils.worker_helper import get_latest_iteration
 '''
 Translator using Google Translate via Playwright.
 Translates sentences from a Parquet dataset and saves results in CSV and JSON formats.
@@ -30,6 +36,15 @@ Translates sentences from a Parquet dataset and saves results in CSV and JSON fo
 # Ensure output folder exists
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
+BatchType = List[Tuple[str, str]]
+TaskType = Tuple[int, BatchType]
+
+class TaskResultType(TypedDict):  
+    error_count: int
+    worker_id: int
+    task_id: int
+    entries: List[Dict[str, any]]
+    
 
 logger = translation_logger.get_logger(
     output_folder=OUTPUT_FOLDER,
@@ -41,16 +56,50 @@ MERGE_SYMBOL = "<|||>"  # Symbol to merge multiple sentences
 
 scheduler = BatchScheduler(max_workers=CONFIG["max_workers"])
 
-# Worker: Process One Batch
-def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_of_batches: int) -> List[Dict]:
-    current_batch = batch_idx + 1
-    batch_msg = f"Batch {current_batch} |"
-    scheduler.ensure_batch_interval(batch_msg)
-    results = []
-   
+def clean_corpus_entries(entries):
+    """
+    Remove invalid entries and duplicates from the corpus.
+    Returns a new list.
+    """
+    cleaned = []
+    seen = set()  # track unique keys
+    for entry in entries:
+        sl = entry.get(SL, "")
+        tl = entry.get(TL, "")
+        # Skip if SL equals TL
+        if sl == tl:
+            continue
 
+        # Skip if TL contains "[ERROR]" (or is exactly that)
+        if tl == "[ERROR]" or "[ERROR]" in tl:
+            continue
+        
+        # Skip if SL contains "[ERROR]" (or is exactly that)
+        if sl == "[ERROR]" or "[ERROR]" in sl:
+            continue
+
+        # Create a unique key – adjust as needed
+        # Here we use (sl, tl) as the deduplication key.
+        key = (sl, tl)
+
+        if key not in seen:
+            seen.add(key)
+            cleaned.append(entry)
+
+    return cleaned
+
+
+def puppeter_browser(
+    batch: BatchType,
+    current_batch: int,
+    total_of_batches: int,
+    batch_msg: str,
+    results_list: List[Dict] = [],
+    headless: bool = True):
+    
+    scheduler.ensure_batch_interval(batch_msg)  
     with sync_playwright() as p:
-        browser, context = get_new_context(playwright=p, headless=True, msg_prefix=batch_msg)
+        browser, context = get_new_context(playwright=p, headless=headless, msg_prefix=batch_msg)
         page = context.new_page()
         
         page.add_init_script("""
@@ -61,25 +110,24 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
         """)        
         
      
-        logger.info(f"{batch_msg} {len(sentence_pairs)} sentences")
+        logger.info(f"{batch_msg} {len(batch)} sentences")
         perform_action(lambda: page.goto(get_url(SL, TL), timeout=CONFIG["page_timeout_ms"]), f"{batch_msg} goto")
+        handle_cookies_request(page=page, batch_msg=batch_msg)
         
         sentences_per_request = random.randint(*CONFIG["sentences_per_request_range"])
-        chunked_sentences = [sentence_pairs[i:i + sentences_per_request] for i in range(0, len(sentence_pairs), sentences_per_request)]
-        logger.debug(f"{batch_msg} Chunked_sentences: {len(sentence_pairs)} elements")
-        
-        error_count = 0
-
-        for i, chunk in enumerate(chunked_sentences):            
-            
+        chunked_sentences = [batch[i:i + sentences_per_request] for i in range(0, len(batch), sentences_per_request)]
+        logger.debug(f"{batch_msg} Chunked_sentences: {len(batch)} elements")
+       
+        for i, chunk in enumerate(chunked_sentences):  
             try:
-                if error_count >= 5:
+                scheduler.ensure_batch_interval(batch_msg) 
+                if scheduler.check_errors_limit():
                     error_msg = "Too many errors, adding pause..."
                     logger.error(f"{batch_msg} {error_msg}")
                     take_screenshot(page, filename=error_msg, msg_prefix=batch_msg)                   
                    
                     get_random_delay(CONFIG["new_request_delay_range"], fatigue=2, msg=f"{batch_msg}: Cooling down after errors")
-                    error_count = 0
+                    scheduler.reset_errors_count()
                 logger.debug(f"{batch_msg} Translating {len(chunk)} sentences per request")
 
                 merged_text = merge_sentences([pair[0] for pair in chunk], msg=batch_msg)
@@ -96,20 +144,21 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
                             take_screenshot(page, filename=f"{e.message}", msg_prefix=batch_msg)
                             break
                         logger.warning(f"{batch_msg} Attempt {attempt+1} failed for '{merged_text[:40]}...': {e}")
+                      
                         get_random_delay(CONFIG["retry_delay_range"])
                         page.reload()
                         get_random_delay(CONFIG["retry_delay_range"])
                         # checks if it's the last attempt
                         if attempt == CONFIG["retry_attempts"] - 1:
                             translation = f"[TRANSLATION FAILED] - {merged_text}"
-                            error_count += 1
+                            scheduler.increment_errors_count()
                 logger.debug(f"{batch_msg} translation type: {type(translation)}")
                 if isinstance(translation, tuple):
                     logger.debug(f"{batch_msg} Translation {translation}")
                     source_texts, target_texts = translation[0], translation[1]
                     
                     for i, (sl, tl) in enumerate(zip(source_texts, target_texts)):
-                        results.append({    
+                        results_list.append({    
                             SL: sl.strip() if sl else "",
                             TL: tl.strip() if tl else "",
                             OL: merged_text.strip()
@@ -119,7 +168,7 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
 
                     for i, translation in enumerate(split_translations):
                         
-                        results.append({    
+                        results_list.append({    
                             SL: " ".join(chunk[i][0].split()),
                             TL: clean_text(translation),
                             OL: " ".join(chunk[i][1].split())
@@ -129,24 +178,80 @@ def process_batch(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_o
                 error_msg = f"Unexpected error: {e}"
                 logger.error(f"{batch_msg} {error_msg}")
                 take_screenshot(page, filename=error_msg, msg_prefix=batch_msg   )
-                error_count += 1
-                results.append({f"{SL}": chunk[i][0], f"{TL}": "[ERROR]", f"{OL}": chunk[i][1]})
+                scheduler.increment_errors_count()
+                results_list.append({f"{SL}": chunk[i][0], f"{TL}": "[ERROR]", f"{OL}": chunk[i][1]})
             finally:
                 # Random delay between requests
                 get_random_delay(CONFIG["new_request_delay_range"])
         
-        scheduler.ensure_interval_before_next_batch(total_of_batches, batch_msg)
-                          
+
+        logger.debug(f"{batch_msg} Filtering logs.")
+        batch_msg = batch_msg.split('|')[0]
+
+                            
         translation_logger.filter_log(
             filter_func=lambda line: batch_msg in line,
-            new_filename=batch_msg if error_count < 1 else f"{batch_msg}_err",
+            new_filename=batch_msg if scheduler.get_errors_count() < 1 else f"{batch_msg}_err",
+            output_folder="filtered_logs",
             msg=batch_msg
         )
               
         context.close()
         browser.close()
+        scheduler.ensure_interval_before_next_batch(total_of_batches, batch_msg)
+              
+        return results_list
 
-    return results
+
+# Worker: Process One Batch
+#def process_task(sentence_pairs: List[Tuple[str, str]], batch_idx: int, total_of_batches: int) -> List[Dict]:
+def process_task(
+    worker_id: int,
+    task_queue: queue.Queue[TaskType],
+    result_queue: queue.Queue[TaskResultType],
+    total_of_batches: int
+    ) -> None:
+
+    while True:       
+        try:
+            task = task_queue.get(timeout=10)  # Wait for task
+            if task is None:  # Poison pill to stop worker
+                task_queue.task_done()
+                break
+            
+            task_id, batch = task
+            
+            batch_msg = (
+                f"Worker {worker_id} | "
+                f"Batch {task_id}/{total_of_batches} | "
+            )              
+            
+
+            entries = puppeter_browser(
+                batch=batch,
+                current_batch=task_id,
+                total_of_batches=total_of_batches,
+                batch_msg=batch_msg,
+                headless=True
+            )
+            
+            result_queue.put({
+                "worker_id": worker_id,
+                "task_id": task_id,
+                "entries": entries
+            })
+                    
+            task_queue.task_done()
+        except queue.Empty as e:
+            logger.warning(f"Worker {worker_id} Batch is empty: {str(e)}")
+            break
+        except Exception as e:
+            logger.error(f"Worker {worker_id} error: {str(e)}")
+            task_queue.task_done()
+        finally:
+            scheduler.ensure_batch_interval(batch_msg)
+            
+
 
 
 def merge_sentences(sentences: List[str], msg: str = '') -> str:
@@ -173,94 +278,243 @@ def split_translation(translated_text: str, expected_count: int, msg: str = '') 
 
     return parts
     
+def is_valid(row: dict, source_col: str, target_col: str) -> bool:
+    s = row.get(source_col)  # or row[source_col]
+    t = row.get(target_col)
+    return (s is not None and isinstance(s, str) and s.strip() and
+            t is not None and isinstance(t, str) and t.strip())
 
+def load_dataset_hugging_face(
+    dataset_path: str,
+    source_col: str = SL,      # e.g. "br"
+    target_col: str = OL       # e.g. "fr"
+) -> Tuple[List[str], List[str]]: 
+    try:                
+        logger.info(f"Loading dataset: {dataset_path} (columns: {source_col!r}, {target_col!r})")
 
+        # Try to load only the two columns we care about
+        ds: Dataset = load_dataset(
+            dataset_path,
+            columns=[source_col, target_col],  # only download these columns
+            split="train"
+        )
 
-def load_dataset() -> Tuple[List[str], List[str]]:  
-    try:
-        dataset_path = "./scrapper_korpus_kernewek"
-        # dataset_path = "hf://datasets/Bretagne/Banque_Sonore_Dialectes_Bretons"
-        # dataset_path = "hf://datasets/Bretagne/Autogramm_Breton_translation/data/train-00000-of-00001.parquet"
-        # dataset_path = "hf://datasets/Bretagne/UD_Breton-KEB_translation/data/train-00000-of-00001.parquet"
-        # df = pd.read_parquet(dataset_path)
-        df = pd.DataFrame({SL: wordbank, OL: wordbank})
-        logger.info("DataFrame loaded. Shape: %s, Columns: %s, Data Types:\n%s", 
-            df.shape, df.columns.tolist(), df.dtypes)
-        logger.info(dataset_path)
-        df = df.sample(frac=1, random_state=random.randint(1, 43)).reset_index(drop=True)
-        sl_sentences = df[SL].dropna().tolist()
-        ol_sentences = df[OL].dropna().tolist()
-        if not sl_sentences:
-            raise ValueError(f"No {SL.upper()} sentences found in dataset.")
+        logger.info(
+            f"Dataset loaded | rows: {len(ds):,} | "
+            f"columns: {ds.column_names} | "
+            f"features: {ds.features}"
+        )
+          
+        if len(ds) == 0:
+            raise ValueError(f"Dataset {dataset_path} is empty after loading")
         
-            
-        logger.info(f"{SL.upper()} sentences length: {len(sl_sentences)}")
-        print(sl_sentences[0])
-        logger.info(f"Loaded {len(sl_sentences):,} {SL.upper()} sentences. Starting translation...")
+
+        missing = {source_col, target_col} - set(ds.column_names)
+        if missing:
+            raise ValueError(
+                f"Requested columns {source_col!r} and/or {target_col!r} "
+                f"not found in {dataset_path}. Available: {ds.column_names}"
+            )
+ 
+        ds = ds.filter(lambda row: is_valid(row, source_col, target_col))
+        if len(ds) == 0:
+            raise ValueError(
+                f"No valid non‑empty {source_col.upper()} → {target_col.upper()} pairs found "
+                f"in {dataset_path} (after filtering null/empty)"
+            )
+
+        # 2. Remove duplicates using Pandas
+        df = ds.to_pandas()
+        df = df.drop_duplicates(subset=[source_col, target_col])
+        ds = Dataset.from_pandas(df)
         
-            
-        return sl_sentences, ol_sentences
+        # 3. Shuffle (reproducible)
+        ds = ds.shuffle(seed=random.randint(1, 43))
+       
+        # Convert tuples back to lists (usually very cheap)
+        source_sentences = list(ds[source_col])
+        target_sentences = list(ds[target_col])
+                
+        logger.info(f"{SL.upper()} sentences after filtering & shuffling: {len(source_sentences):,}")
+        if source_sentences:
+            print("Example source sentence:", source_sentences[0][:200])  # limit length for log
+            logger.info(f"Loaded {len(source_sentences):,} valid {SL.upper()} sentences from {dataset_path}")
+
+        return source_sentences, target_sentences
+
     except Exception as e:
-        logger.error(f"Failed to load dataset: {e}")
-        return
+        logger.error(f"Failed to load {dataset_path}: {type(e).__name__}: {str(e)}", exc_info=True)
+        return [], []
 
 
 def main():
-    # Load dataset   
-    sl_sentences, ol_sentences = load_dataset()
+    
+    dataset_path = "./scrapper_korpus_kernewek"
+    dataset_paths = [
+    #    "Bretagne/Banque_Sonore_Dialectes_Bretons",
+        "Bretagne/Autogramm_Breton_translation",
+        "Bretagne/UD_Breton-KEB_translation",
+        "Bretagne/Korpus-divyezhek-brezhoneg-galleg"
+        
+    ]
 
+    data = {SL: [], OL: []}
+
+    for path in dataset_paths:
+        # Load dataset   
+        sl_sentences, ol_sentences = load_dataset_hugging_face(path)
+        data[SL].extend(sl_sentences)
+        data[OL].extend(ol_sentences)
+        
     # Merge the lists using zip()
-    merged_iterator = zip(sl_sentences, ol_sentences)
-
-    # Convert the iterator to a list of tuples
-    merged_list_of_tuples = list(merged_iterator)
+    logger.info(f"Merged datasets: {len(data[SL]):,} sentences total")
+    
+    expected_pattern = f"*_*_*_*.json"
+    
+    corpus_entries, error_count = get_latest_iteration(
+        expected_pattern=expected_pattern,
+        return_all_matches=True
+    )
+    
+    filtered_sl = []
+    filtered_ol = []
+    
+    corpus_entries = clean_corpus_entries(corpus_entries)
+    
+    for sl_sent, ol_sent in zip(data[SL], data[OL]):
+        if (sl_sent, ol_sent) not in corpus_entries:
+            filtered_sl.append(sl_sent)
+            filtered_ol.append(ol_sent)
+    
+    data[SL] = filtered_sl
+    data[OL] = filtered_ol
+    
+    # Merge the lists using zip()
+    logger.info(f"After removing existing entries from previous runs: {len(data[SL]):,}/{len(data[OL]):,} sentences total")
+    
+    merged_list = []
+    for sl, ol in zip(data[SL], data[OL]):
+        merged_list.append({SL: sl, OL: ol})
+    
+    random.shuffle(merged_list) 
+    
+    merged_list_of_tuples = [(item[SL], item[OL]) for item in merged_list]
     
     # Split into batches
     batch_size = CONFIG["batch_size"]
-    batches = [merged_list_of_tuples[i:i + batch_size] for i in range(0, len(merged_list_of_tuples), batch_size)]
-    total_of_batches = len(batches)
+    batches: BatchType = [merged_list_of_tuples[i:i + batch_size] for i in range(0, len(merged_list_of_tuples), batch_size)]
     all_results = []
 
     columns = [SL, TL, OL]
+    
+    # shuffle the batches so the request will be randomised
 
-    with ThreadPoolExecutor(max_workers=CONFIG["max_workers"]) as executor:
-        futures = {
-            executor.submit(process_batch, batch, idx, total_of_batches): idx
-            for idx, batch in enumerate(batches)
-        }
+    
+    task_queue = queue.Queue[TaskType]()
+    result_queue = queue.Queue[TaskResultType]()
 
-        for future in as_completed(futures):
-            batch_idx = futures[future]
-            completed = batch_idx + 1
-            try:
-                batch_results = future.result()
-                all_results.extend(batch_results)
-                # Save batch immediately to individual files
-                save_batch_to_csv(batch_results, f"batch_{completed}", columns)
-                                
-                save_batch_to_json(batch_results, f"batch_{completed}")
-                
-                logger.info(f"Batch {completed}/{len(batches)} completed.")
-            except Exception as e:
-                logger.error(f"Batch {completed} failed: {e}")
-                
+    for task_id, item in enumerate(batches, 1):
+        task_queue.put((task_id, item))
+    
+    workers = []
+    task_queue_size = task_queue.qsize() + 1
+    
+    scheduler.set_max_workers(min(CONFIG['max_workers'], task_queue_size))
+    
+    for worker_id in range(1, scheduler.max_workers + 1):
+        worker_thread = threading.Thread(target=process_task, args=(worker_id, task_queue, result_queue, task_queue_size))
+        worker_thread.start()
+        workers.append(worker_thread)
+    
+    
+    # Wait for all tasks to complete
+    task_queue.join()
+    
+        
+    # Send poison pills to stop workers
+    for _ in workers:
+        task_queue.put(None)
+    
+    # Wait for workers to finish
+    for worker_thread in workers:
+        worker_thread.join()
+        
+    while not result_queue.empty():        
+        try:
+            result = result_queue.get()
+            all_results.extend(result["entries"])
+            logger.warning(f"Batch {result.get('task_id')}/{task_queue_size}.")
             
+           
+            # Save batch immediately to individual files
+            filename = f"worker_{result.get('worker_id')}_batch_{result.get('task_id')}_{task_queue_size}"
             
+            filtered_results = [entry for entry in result['entries'] if entry[TL] != entry[SL]]
+            
+            save_batch_to_csv(
+                batch_results=filtered_results,
+                filename=filename,
+                columns=columns,
+                output_folder="partial_results",
+            )
+                            
+            save_batch_to_json(
+                batch_results=filtered_results,
+                filename=filename,
+                output_folder="partial_results",
+            )
+            
+            logger.info(f"Batch {result.get('task_id')}/{task_queue_size} completed.")
+        except Exception as e:
+            logger.error(f"Batch {result.get('task_id')} failed: {e}")
+        
+    
+    
+    output_filename = f"{SL}_{TL}_{OL}_parallel"  
+    
+    save_batch_to_csv(
+        batch_results=corpus_entries,
+        filename=f"{output_filename}_previous_runs",
+        columns=columns,
+        add_timestamp=True
+    )
+    
+    save_batch_to_json(
+        batch_results=corpus_entries,
+        filename=f"{output_filename}_previous_runs",
+        remove_duplicates=True,
+        columns=columns,
+        save_duplicates=True, 
+        add_timestamp=True
+    )   
+            
+    all_results.extend(corpus_entries)   
     # Save CSV
-    csv_file = f"{SL}_{TL}_{OL}_parallel"
-    save_batch_to_csv(all_results, csv_file, columns)
+    save_batch_to_csv(
+        batch_results=all_results,
+        filename=output_filename,
+        columns=columns,
+        add_timestamp=True
+    )
 
     # Save JSON
-    json_file = f"{SL}_{TL}_{OL}_parallel"
-    save_batch_to_json(all_results, json_file)
+    save_batch_to_json(
+        batch_results=all_results,
+        filename=output_filename,
+        remove_duplicates=True,
+        columns=columns,
+        save_duplicates=True, 
+        duplicate_filename=f"{output_filename}_duplicates",
+        add_timestamp=True
+    )
     
      
     if(len(all_results) == 0):
         logger.warning("Catastrophic failure! No results were obtained.")
-        logger.warning(f"Whatever results were saved to {csv_file} and {json_file}")
+        logger.warning(f"Whatever results were saved to {output_filename} and {output_filename}")
         
     else:
-        logger.info(f"Translation complete! Saved to {csv_file}.csv and {json_file}.json")
+        logger.info(f"Translation complete! Saved to {output_filename}.csv and {output_filename}.json")
         
         # 1. Overall success rate
         successful = sum(1 for r in all_results if not r[TL].startswith('['))

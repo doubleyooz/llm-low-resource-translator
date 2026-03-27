@@ -1,10 +1,12 @@
 import csv
-import os
-from pathlib import Path
-from typing import Dict, List
 import pandas as pd
+
+from pathlib import Path
+from typing import Dict, List, Optional
+from datetime import datetime
 from constants.output import LOG_FILENAME, OUTPUT_FOLDER
 from logger import translation_logger
+from utils.txt_helper import clean_text, sanitize_txt
 
 FOLDER = './'
 
@@ -60,29 +62,73 @@ def remove_columns_csv(
     logger.info(f"{batch_msg} → Saved unique data → {cleaned_file}")
     logger.info(f"{batch_msg} → Saved duplicates  → {duplicates_file}")
 
-def save_batch_to_csv(batch_results: List[Dict], filename: str, columns: List[str], msg_prefix: str = 'Saving as csv | '):    
-    filename = Path(filename).stem  # Remove any existing extension
-    csv_filename = f"{filename}.csv"
- 
+def save_batch_to_csv(
+    batch_results: List[Dict],
+    filename: str,
+    columns: List[str],    
+    dedup_columns: Optional[List[str]] = [], # if None → dedup on all columns, if [] → no dedup
+    msg_prefix: str = 'Saving as csv | ',
+    add_timestamp: bool = False
+) -> Optional[Path]:    
+
+    filename = sanitize_txt(filename)
+    if add_timestamp:
+        current_date = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{filename}_{current_date}"
+        
+    csv_filename = f"{filename}.csv" 
     
     try:        
         base_path = Path(translation_logger.get_filepath())
         csv_file_path = base_path / csv_filename
-
         csv_file_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Ensure all dictionaries have all columns (fill missing with None)
-        sanitized_results = []
-        for row in batch_results:
-            sanitized_row = {col: row.get(col) for col in columns}
-            sanitized_results.append(sanitized_row)
-            
+        if not batch_results:
+            logger.warning(f"{msg_prefix} Empty batch")
+            return None
+        
+        df = pd.DataFrame(batch_results)
+
+        # Ensure all expected columns exist
+        for col in columns:
+            if col not in df.columns:
+                df[col] = None
+        
+       
         with open(csv_file_path, "w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=columns)
             writer.writeheader()
             writer.writerows(batch_results)
-            
-        logger.info(f"{msg_prefix} csv saved to {csv_file_path}")
+        
+        # Deduplication
+        if dedup_columns is None:
+            # Default: all columns
+            df_unique = df.drop_duplicates(keep='first')
+        elif dedup_columns:
+            # Subset of columns
+            valid_subset = [c for c in dedup_columns if c in df.columns]
+            if valid_subset:
+                df_unique = df.drop_duplicates(subset=valid_subset, keep='first')
+            else:
+                logger.warning(f"{msg_prefix} No valid dedup columns → saving all")
+                df_unique = df
+        else:
+            # dedup_columns = [] → no dedup
+            df_unique = df
+
+        if df_unique.empty:
+            logger.warning(f"{msg_prefix} No rows after deduplication")
+            return None
+        
+        df_unique = df_unique.apply(clean_text, axis=1)
+        df_unique[columns].to_csv(csv_file_path, index=False, encoding="utf-8")
+
+        removed = len(df) - len(df_unique)
+        logger.info(
+            f"{msg_prefix} CSV saved to {csv_file_path} "
+            f"({len(df_unique):,} unique rows"
+            f"{f', removed {removed:,} duplicates' if removed > 0 else ''})"
+        )
         
         # Verify file was created
         if csv_file_path.exists() and csv_file_path.stat().st_size > 0:

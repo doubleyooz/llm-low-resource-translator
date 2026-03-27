@@ -1,3 +1,3 @@
-SL="en" # source language
-TL="kw" # target language
-OL="english" # original language
+SL="fr" # source language
+TL="en" # target language
+OL="br" # original language

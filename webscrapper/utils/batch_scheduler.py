@@ -24,6 +24,10 @@ class BatchScheduler:
         
         self.sleeping_batches = 0
         self.sleeping_batches_lock = threading.Lock()
+        self.errors_count = 0
+        self.errors_count_lock = threading.Lock()
+        
+        self.errors_limit = 5
         
 
     def ensure_interval_before_next_batch(self, total_of_batches: int, msg: str = ""):
@@ -105,7 +109,26 @@ class BatchScheduler:
                 
             self.last_batch_start_time = time.time()
             
+    def get_errors_count(self):
+        """Get the number of batches currently sleeping."""
+        with self.errors_count_lock:
+            return self.errors_count  
+        
+    def increment_errors_count(self):
+        """Increment the number of errors."""
+        with self.errors_count_lock:
+            self.errors_count += 1
+    
+    def reset_errors_count(self):
+        """Reset the error count to zero."""
+        with self.errors_count_lock:
+            self.errors_count = 0
             
+    def check_errors_limit(self):
+        """Check if the error count has reached the limit."""
+        with self.errors_count_lock:
+            return self.errors_count >= self.errors_limit
+
     def get_sleeping_batches_count(self):
         """Get the number of batches currently sleeping."""
         with self.sleeping_batches_lock:

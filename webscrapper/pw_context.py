@@ -10,9 +10,13 @@ logger = translation_logger.get_logger(
     output_folder=OUTPUT_FOLDER,
     log_filename=LOG_FILENAME
 )
+locales = ["en-US", "en-GB", "en-CA", "en-AU", "en-NZ", "en-IE"]
 
 def get_new_context(playwright: Playwright, headless: bool = False, useProxy: bool = False, msg_prefix: str = '') -> Tuple[Browser, BrowserContext]:
-    browser = playwright.chromium.launch(headless=headless)  # Set to True for headless mode
+    args = [] if random.random() < 0.6 else ['--mute-audio']
+  
+    random_locale = random.choice(locales)
+    browser = playwright.chromium.launch(headless=headless, args=args)  # Set to True for headless mode
       
     proxy = get_proxy() if useProxy else None
     logger.info(f"{msg_prefix} Proxy: {proxy['server'] if proxy else 'None'}")
@@ -27,7 +31,7 @@ def get_new_context(playwright: Playwright, headless: bool = False, useProxy: bo
             
         },
         proxy=proxy,
-        locale="en-US",
+        locale=random_locale,
         java_script_enabled=True,
         viewport={
             'width': random.randint(1366, 1920),

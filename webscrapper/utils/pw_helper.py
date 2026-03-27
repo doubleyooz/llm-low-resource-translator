@@ -104,3 +104,24 @@ def click_element(element: Locator, msg_prefix: str = "", hover: bool = False, r
             if raise_exception:
                 raise e
             return False
+        
+def handle_cookies_request(page: Page, batch_msg: str = "") -> None:
+    try:
+        random_number = random.randint(1, 100)
+        if random_number < 50:
+            button_name = "Accept all"
+        else:
+            button_name = "Reject all"
+        # Option A: prefer role + exact name (most reliable)
+        accept_button = page.get_by_role("button", name=button_name, exact=True)
+        
+        result = click_element(accept_button, msg_prefix=batch_msg, hover=True)
+        
+        # Only proceed if we actually see it (timeout=4000–8000 ms is usually enough)
+        if result:
+            logger.info(f"{batch_msg} Accepted cookies")
+        else:
+            logger.info(f"{batch_msg} No accept button found → probably already accepted or no banner")
+    except Exception as e:
+        logger.warning(f"{batch_msg} Cookie banner handling failed: {e}")
+        # You can decide whether to continue or raise depending on how critical it is
